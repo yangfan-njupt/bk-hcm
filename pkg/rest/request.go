@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"mime/multipart"
 	"net"
 	"net/http"
 	"net/url"
@@ -62,8 +63,9 @@ type ContentType string
 
 // ContentType http request content type
 const (
-	FormDataContent ContentType = "application/x-www-form-urlencoded"
-	JsonContent     ContentType = "application/json"
+	FormDataContent  ContentType = "application/x-www-form-urlencoded"
+	MultipartContent ContentType = "multipart/form-data"
+	JsonContent      ContentType = "application/json"
 )
 
 // Request http request.
@@ -95,6 +97,9 @@ type Request struct {
 
 	// contentType http content type
 	contentType ContentType
+
+	// multipartWriter multipart writer
+	multipartWriter *multipart.Writer
 
 	err error
 }
@@ -181,6 +186,31 @@ func (r *Request) subResource(subPath string) *Request {
 // WithContentType add content type to request.
 func (r *Request) WithContentType(contentType ContentType) *Request {
 	r.contentType = contentType
+	return r
+}
+
+// UploadFile add file to request. If use this method, the content type will be set multipart/form-data.
+func (r *Request) UploadFile(fieldName string, fileName string, fileBytes []byte) *Request {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	filePart, _ := writer.CreateFormFile(fieldName, fileName)
+	_, err := filePart.Write(fileBytes)
+	if err != nil {
+		r.err = err
+		r.multipartWriter = nil
+		return r
+	}
+
+	err = writer.Close()
+	if err != nil {
+		r.err = err
+		r.multipartWriter = nil
+	}
+
+	r.body = body.Bytes()
+	r.contentType = MultipartContent
+	r.multipartWriter = writer
 	return r
 }
 
@@ -384,6 +414,10 @@ func (r *Request) doWithHost(client client.HTTPClient, host string, retries int,
 	case FormDataContent:
 		r.body = []byte(r.params.Encode())
 		r.params = url.Values{}
+	case MultipartContent:
+		if r.multipartWriter != nil {
+			contentType = ContentType(r.multipartWriter.FormDataContentType())
+		}
 	default:
 		contentType = JsonContent
 	}
