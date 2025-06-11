@@ -111,7 +111,7 @@ func (cli *client) updateCvm(kt *kit.Kit, accountID string, region string,
 		return fmt.Errorf("cvm updateMap is <= 0, not update")
 	}
 
-	lists := make([]dataproto.CvmBatchUpdate[corecvm.HuaWeiCvmExtension], 0)
+	lists := make([]dataproto.CvmBatchUpdateWithExtension[corecvm.HuaWeiCvmExtension], 0)
 
 	cloudVpcIDs := make([]string, 0)
 	cloudImageIDs := make([]string, 0)
@@ -168,23 +168,25 @@ func (cli *client) updateCvm(kt *kit.Kit, accountID string, region string,
 			imageID = id
 		}
 
-		cvm := dataproto.CvmBatchUpdate[corecvm.HuaWeiCvmExtension]{
-			ID:                   id,
-			Name:                 one.Name,
-			CloudVpcIDs:          []string{one.Metadata["vpc_id"]},
-			VpcIDs:               []string{vpcMap[one.Metadata["vpc_id"]].VpcID},
-			CloudSubnetIDs:       cloudSubnetIDs,
-			SubnetIDs:            subnetIDs,
-			CloudImageID:         one.Image.Id,
-			ImageID:              imageID,
-			Memo:                 one.Description,
-			Status:               one.Status,
-			PrivateIPv4Addresses: privateIPv4Addresses,
-			PrivateIPv6Addresses: privateIPv6Addresses,
-			PublicIPv4Addresses:  publicIPv4Addresses,
-			PublicIPv6Addresses:  publicIPv6Addresses,
-			CloudLaunchedTime:    startTime,
-			CloudExpiredTime:     one.AutoTerminateTime,
+		cvm := dataproto.CvmBatchUpdateWithExtension[corecvm.HuaWeiCvmExtension]{
+			CvmBatchUpdate: dataproto.CvmBatchUpdate{
+				ID:                   id,
+				Name:                 one.Name,
+				CloudVpcIDs:          []string{one.Metadata["vpc_id"]},
+				VpcIDs:               []string{vpcMap[one.Metadata["vpc_id"]].VpcID},
+				CloudSubnetIDs:       cloudSubnetIDs,
+				SubnetIDs:            subnetIDs,
+				CloudImageID:         one.Image.Id,
+				ImageID:              imageID,
+				Memo:                 one.Description,
+				Status:               one.Status,
+				PrivateIPv4Addresses: privateIPv4Addresses,
+				PrivateIPv6Addresses: privateIPv6Addresses,
+				PublicIPv4Addresses:  publicIPv4Addresses,
+				PublicIPv6Addresses:  publicIPv6Addresses,
+				CloudLaunchedTime:    startTime,
+				CloudExpiredTime:     one.AutoTerminateTime,
+			},
 			Extension: &corecvm.HuaWeiCvmExtension{
 				AliasName:             one.OSEXTSRVATTRinstanceName,
 				HypervisorHostname:    one.OSEXTSRVATTRhypervisorHostname,
