@@ -298,7 +298,7 @@ func (cli *client) updateCvm(kt *kit.Kit, accountID string, resGroupName string,
 		return fmt.Errorf("cvm updateMap is <= 0, not update")
 	}
 
-	lists := make([]dataproto.CvmBatchUpdate[corecvm.AzureCvmExtension], 0)
+	lists := make([]dataproto.CvmBatchUpdateWithExtension[corecvm.AzureCvmExtension], 0)
 
 	niMap := make(map[string]string)
 	niIDs := make([]string, 0)
@@ -345,26 +345,28 @@ func (cli *client) updateCvm(kt *kit.Kit, accountID string, resGroupName string,
 			imageID = id
 		}
 
-		cvm := dataproto.CvmBatchUpdate[corecvm.AzureCvmExtension]{
-			ID:             id,
-			Name:           converter.PtrToVal(one.Name),
-			CloudVpcIDs:    []string{vpcMap[converter.PtrToVal(one.ID)].VpcCloudID},
-			VpcIDs:         []string{vpcMap[converter.PtrToVal(one.ID)].VpcID},
-			CloudSubnetIDs: cloudMap[converter.PtrToVal(one.ID)].CloudSubnetIDs,
-			SubnetIDs:      subnetMap[converter.PtrToVal(one.ID)],
-			CloudImageID:   converter.PtrToVal(one.CloudImageID),
-			ImageID:        imageID,
-			// 云上不支持该字段
-			Memo:                 nil,
-			Status:               converter.PtrToVal(one.Status),
-			PrivateIPv4Addresses: cloudMap[converter.PtrToVal(one.ID)].PrivateIPv4Addresses,
-			PrivateIPv6Addresses: cloudMap[converter.PtrToVal(one.ID)].PrivateIPv6Addresses,
-			PublicIPv4Addresses:  cloudMap[converter.PtrToVal(one.ID)].PublicIPv4Addresses,
-			PublicIPv6Addresses:  cloudMap[converter.PtrToVal(one.ID)].PublicIPv6Addresses,
-			// 云上不支持该字段
-			CloudLaunchedTime: "",
-			// 云上不支持该字段
-			CloudExpiredTime: "",
+		cvm := dataproto.CvmBatchUpdateWithExtension[corecvm.AzureCvmExtension]{
+			CvmBatchUpdate: dataproto.CvmBatchUpdate{
+				ID:             id,
+				Name:           converter.PtrToVal(one.Name),
+				CloudVpcIDs:    []string{vpcMap[converter.PtrToVal(one.ID)].VpcCloudID},
+				VpcIDs:         []string{vpcMap[converter.PtrToVal(one.ID)].VpcID},
+				CloudSubnetIDs: cloudMap[converter.PtrToVal(one.ID)].CloudSubnetIDs,
+				SubnetIDs:      subnetMap[converter.PtrToVal(one.ID)],
+				CloudImageID:   converter.PtrToVal(one.CloudImageID),
+				ImageID:        imageID,
+				// 云上不支持该字段
+				Memo:                 nil,
+				Status:               converter.PtrToVal(one.Status),
+				PrivateIPv4Addresses: cloudMap[converter.PtrToVal(one.ID)].PrivateIPv4Addresses,
+				PrivateIPv6Addresses: cloudMap[converter.PtrToVal(one.ID)].PrivateIPv6Addresses,
+				PublicIPv4Addresses:  cloudMap[converter.PtrToVal(one.ID)].PublicIPv4Addresses,
+				PublicIPv6Addresses:  cloudMap[converter.PtrToVal(one.ID)].PublicIPv6Addresses,
+				// 云上不支持该字段
+				CloudLaunchedTime: "",
+				// 云上不支持该字段
+				CloudExpiredTime: "",
+			},
 			Extension: &corecvm.AzureCvmExtension{
 				ResourceGroupName: resGroupName,
 				AdditionalCapabilities: &corecvm.AzureAdditionalCapabilities{

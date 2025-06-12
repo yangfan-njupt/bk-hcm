@@ -267,7 +267,7 @@ func (cli *client) updateCvm(kt *kit.Kit, accountID string, region string, zone 
 		return fmt.Errorf("cvm updateMap is <= 0, not update")
 	}
 
-	lists := make([]dataproto.CvmBatchUpdate[corecvm.GcpCvmExtension], 0)
+	lists := make([]dataproto.CvmBatchUpdateWithExtension[corecvm.GcpCvmExtension], 0)
 
 	updateSlice := make([]typescvm.GcpCvm, 0)
 	for _, one := range updateMap {
@@ -336,23 +336,25 @@ func (cli *client) updateCvm(kt *kit.Kit, accountID string, region string, zone 
 		}
 
 		priIPv4, pubIPv4, priIPv6, pubIPv6 := gcp.GetGcpIPAddresses(one.NetworkInterfaces)
-		cvm := dataproto.CvmBatchUpdate[corecvm.GcpCvmExtension]{
-			ID:                   id,
-			Name:                 one.Name,
-			CloudVpcIDs:          []string{vpcMap[inVpcSelfLinks[0]].VpcCloudID},
-			VpcIDs:               []string{vpcMap[inVpcSelfLinks[0]].VpcID},
-			CloudSubnetIDs:       cloudSubIDs,
-			SubnetIDs:            subnetIDs,
-			Memo:                 converter.ValToPtr(one.Description),
-			Status:               one.Status,
-			PrivateIPv4Addresses: priIPv4,
-			PrivateIPv6Addresses: priIPv6,
-			PublicIPv4Addresses:  pubIPv4,
-			PublicIPv6Addresses:  pubIPv6,
-			CloudLaunchedTime:    startTime,
-			CloudExpiredTime:     "",
-			CloudImageID:         one.SourceMachineImage,
-			ImageID:              imageID,
+		cvm := dataproto.CvmBatchUpdateWithExtension[corecvm.GcpCvmExtension]{
+			CvmBatchUpdate: dataproto.CvmBatchUpdate{
+				ID:                   id,
+				Name:                 one.Name,
+				CloudVpcIDs:          []string{vpcMap[inVpcSelfLinks[0]].VpcCloudID},
+				VpcIDs:               []string{vpcMap[inVpcSelfLinks[0]].VpcID},
+				CloudSubnetIDs:       cloudSubIDs,
+				SubnetIDs:            subnetIDs,
+				Memo:                 converter.ValToPtr(one.Description),
+				Status:               one.Status,
+				PrivateIPv4Addresses: priIPv4,
+				PrivateIPv6Addresses: priIPv6,
+				PublicIPv4Addresses:  pubIPv4,
+				PublicIPv6Addresses:  pubIPv6,
+				CloudLaunchedTime:    startTime,
+				CloudExpiredTime:     "",
+				CloudImageID:         one.SourceMachineImage,
+				ImageID:              imageID,
+			},
 			Extension: &corecvm.GcpCvmExtension{
 				VpcSelfLinks:             vpcSelfLinks,
 				SubnetSelfLinks:          subnetSelfLinks,

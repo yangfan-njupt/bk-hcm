@@ -102,7 +102,7 @@ func (cli *client) updateCvm(kt *kit.Kit, accountID string, region string,
 		return fmt.Errorf("cvm updateMap is <= 0, not update")
 	}
 
-	lists := make([]dataproto.CvmBatchUpdate[corecvm.TCloudCvmExtension], 0, len(updateMap))
+	lists := make([]dataproto.CvmBatchUpdateWithExtension[corecvm.TCloudCvmExtension], 0, len(updateMap))
 
 	cloudVpcIDs := make([]string, 0)
 	cloudSubnetIDs := make([]string, 0)
@@ -143,24 +143,26 @@ func (cli *client) updateCvm(kt *kit.Kit, accountID string, region string,
 		}
 
 		extension := BuildCVMExtension(one)
-		updateOne := dataproto.CvmBatchUpdate[corecvm.TCloudCvmExtension]{
-			ID:             id,
-			Name:           converter.PtrToVal(one.InstanceName),
-			CloudVpcIDs:    []string{converter.PtrToVal(one.VirtualPrivateCloud.VpcId)},
-			VpcIDs:         []string{vpcMap[converter.PtrToVal(one.VirtualPrivateCloud.VpcId)].VpcID},
-			CloudSubnetIDs: []string{converter.PtrToVal(one.VirtualPrivateCloud.SubnetId)},
-			SubnetIDs:      []string{subnetMap[converter.PtrToVal(one.VirtualPrivateCloud.SubnetId)]},
-			CloudImageID:   converter.PtrToVal(one.ImageId),
-			ImageID:        imageID,
-			// 备注字段云上没有，仅限hcm内部使用
-			Memo:                 nil,
-			Status:               converter.PtrToVal(one.InstanceState),
-			PrivateIPv4Addresses: converter.PtrToSlice(one.PrivateIpAddresses),
-			PublicIPv4Addresses:  converter.PtrToSlice(one.PublicIpAddresses),
-			// 云上该字段没有
-			CloudLaunchedTime: "",
-			CloudExpiredTime:  converter.PtrToVal(one.ExpiredTime),
-			Extension:         extension,
+		updateOne := dataproto.CvmBatchUpdateWithExtension[corecvm.TCloudCvmExtension]{
+			CvmBatchUpdate: dataproto.CvmBatchUpdate{
+				ID:             id,
+				Name:           converter.PtrToVal(one.InstanceName),
+				CloudVpcIDs:    []string{converter.PtrToVal(one.VirtualPrivateCloud.VpcId)},
+				VpcIDs:         []string{vpcMap[converter.PtrToVal(one.VirtualPrivateCloud.VpcId)].VpcID},
+				CloudSubnetIDs: []string{converter.PtrToVal(one.VirtualPrivateCloud.SubnetId)},
+				SubnetIDs:      []string{subnetMap[converter.PtrToVal(one.VirtualPrivateCloud.SubnetId)]},
+				CloudImageID:   converter.PtrToVal(one.ImageId),
+				ImageID:        imageID,
+				// 备注字段云上没有，仅限hcm内部使用
+				Memo:                 nil,
+				Status:               converter.PtrToVal(one.InstanceState),
+				PrivateIPv4Addresses: converter.PtrToSlice(one.PrivateIpAddresses),
+				PublicIPv4Addresses:  converter.PtrToSlice(one.PublicIpAddresses),
+				// 云上该字段没有
+				CloudLaunchedTime: "",
+				CloudExpiredTime:  converter.PtrToVal(one.ExpiredTime),
+			},
+			Extension: extension,
 		}
 
 		if len(one.IPv6Addresses) != 0 {

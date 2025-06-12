@@ -499,6 +499,27 @@ func (az *Azure) CreateCvm(kt *kit.Kit, opt *typecvm.AzureCreateOption) (string,
 		}
 	}
 
+	instance := buildCreateCvmInstance(opt, publicIPCfg, dataDisk)
+
+	poller, err := client.BeginCreateOrUpdate(kt.Ctx, opt.ResourceGroupName, opt.Name, instance, nil)
+	if err != nil {
+		logs.Errorf("begin create cvm failed, err: %v, rid: %s", err, kt.Rid)
+		return "", errorf(err)
+	}
+
+	resp, err := poller.PollUntilDone(kt.Ctx, nil)
+	if err != nil {
+		logs.Errorf("poll until cvm create failed, err: %v, rid: %s", err, kt.Rid)
+		return "", err
+	}
+
+	return SPtrToLowerStr(resp.ID), nil
+}
+
+func buildCreateCvmInstance(opt *typecvm.AzureCreateOption,
+	publicIPCfg *armcompute.VirtualMachinePublicIPAddressConfiguration,
+	dataDisk []*armcompute.DataDisk) armcompute.VirtualMachine {
+
 	instance := armcompute.VirtualMachine{
 		Location: to.Ptr(opt.Region),
 		Properties: &armcompute.VirtualMachineProperties{
@@ -559,19 +580,8 @@ func (az *Azure) CreateCvm(kt *kit.Kit, opt *typecvm.AzureCreateOption) (string,
 	if len(opt.Zones) != 0 {
 		instance.Zones = to.SliceOfPtrs(opt.Zones...)
 	}
-	poller, err := client.BeginCreateOrUpdate(kt.Ctx, opt.ResourceGroupName, opt.Name, instance, nil)
-	if err != nil {
-		logs.Errorf("begin create cvm failed, err: %v, rid: %s", err, kt.Rid)
-		return "", errorf(err)
-	}
 
-	resp, err := poller.PollUntilDone(kt.Ctx, nil)
-	if err != nil {
-		logs.Errorf("poll until cvm create failed, err: %v, rid: %s", err, kt.Rid)
-		return "", err
-	}
-
-	return SPtrToLowerStr(resp.ID), nil
+	return instance
 }
 
 // GetCvm 查询单个 cvm

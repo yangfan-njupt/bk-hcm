@@ -264,6 +264,7 @@ func (g *Gcp) GetRootAccountBillList(kt *kit.Kit, opt *typesBill.GcpRootAccountB
 	return list, total, err
 }
 
+// GetBigQuery ...
 func (g *Gcp) GetBigQuery(kt *kit.Kit, query string) ([]map[string]bigquery.Value, int64, error) {
 	client, err := g.clientSet.bigQueryClient(kt)
 	if err != nil {

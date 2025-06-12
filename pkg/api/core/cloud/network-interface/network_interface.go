@@ -790,7 +790,7 @@ type NetVirtualIP struct {
 	ElasticityIP string `json:"elasticity_ip,omitempty"`
 }
 
-// ServerInterfaceFixedIp
+// ServerInterfaceFixedIp ...
 type ServerInterfaceFixedIp struct {
 	// IpAddress 网卡私网IP信息。
 	IpAddress *string `json:"ip_address,omitempty"`
@@ -809,7 +809,7 @@ type GcpNIExtension struct {
 	SubnetSelfLink    string          `json:"subnet_self_link,omitempty"`
 }
 
-// AccessConfig: An access configuration attached to an instance's
+// AccessConfig An access configuration attached to an instance's
 // network interface. Only one access config per instance is supported.
 type AccessConfig struct {
 	// Name: The name of this access configuration. The default and

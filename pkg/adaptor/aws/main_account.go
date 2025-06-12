@@ -45,7 +45,7 @@ const (
 	AccountCreateErrorMessageAccountAlreadyExists = "EMAIL_ALREADY_EXISTS"
 )
 
-// CreateAccount
+// CreateAccount ...
 // reference: https://docs.aws.amazon.com/organizations/latest/APIReference/API_CreateAccount.html
 func (a *Aws) CreateAccount(kt *kit.Kit, req *proto.CreateAwsMainAccountReq) (*proto.CreateAwsMainAccountResp, error) {
 	// get aws client
