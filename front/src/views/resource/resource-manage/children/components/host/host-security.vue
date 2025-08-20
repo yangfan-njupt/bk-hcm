@@ -14,7 +14,7 @@ import bus from '@/common/bus';
 import { Button, Message, OverflowTitle } from 'bkui-vue';
 import SecurityGroupSelectorDialog from '@/components/security-group-selector-dialog/index.vue';
 import CopyToClipboard from '@/components/copy-to-clipboard/index.vue';
-import DialogFooter from '@/components/common-dialog/dialog-footer.vue';
+import ModalFooter from '@/components/modal/modal-footer.vue';
 
 const props = defineProps({
   data: {
@@ -537,7 +537,7 @@ getSecurityGroupsList();
       </span>
 
       <template #footer>
-        <dialog-footer
+        <modal-footer
           :disabled="tableData.length === 1"
           :loading="unBindLoading"
           @confirm="handleConfirmUnBind"
@@ -574,6 +574,7 @@ getSecurityGroupsList();
       }
     }
   }
+
   .toolbar {
     display: flex;
     align-items: center;
@@ -589,10 +590,12 @@ getSecurityGroupsList();
     }
   }
 }
+
 .security-head {
   display: flex;
   align-items: center;
 }
+
 .error-text {
   color: #ea3636;
 }
