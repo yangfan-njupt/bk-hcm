@@ -16,7 +16,7 @@ import {
 import { Message } from 'bkui-vue';
 import { ThemeEnum } from 'bkui-vue/lib/shared';
 import hintIcon from '@/assets/image/hint.svg';
-import dialogFooter from '@/components/common-dialog/dialog-footer.vue';
+import ModalFooter from '@/components/modal/modal-footer.vue';
 
 const model = defineModel<boolean>();
 const props = defineProps<{
@@ -93,7 +93,7 @@ const handleClosed = () => {
         </div>
 
         <div class="operate-wrap">
-          <dialog-footer
+          <modal-footer
             :disabled="!info.security_groups || info.security_groups?.length <= 1"
             :loading="securityGroupStore.isBatchDisassociateCvmsLoading"
             :confirm-text="t('解绑')"

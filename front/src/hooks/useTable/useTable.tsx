@@ -17,7 +17,7 @@ import { LB_NETWORK_TYPE_REVERSE_MAP, LISTENER_BINDING_STATUS_REVERSE_MAP, SCHED
 import usePagination from '../usePagination';
 import useBillStore from '@/store/useBillStore';
 import { fetchData } from '@pluginHandler/useTable';
-import { buildVIPFilterRules } from '@/utils';
+import { buildVIPFilterRules } from '@/utils/search';
 
 export interface IProp {
   // search-select 配置项
@@ -85,6 +85,7 @@ export interface IProp {
 }
 
 export const useTable = (props: IProp) => {
+  let lastType: string = props.requestOption.type;
   defaults(props, { requestOption: {} });
   defaults(props.requestOption, { dataPath: 'data.details', immediate: true });
 
@@ -97,7 +98,7 @@ export const useTable = (props: IProp) => {
   const businessStore = useBusinessStore();
   const businessMapStore = useBusinessMapStore();
 
-  const searchVal = ref('');
+  const searchVal = ref([]);
   const dataList = ref([]);
   const isLoading = ref(false);
   const sort = ref(props.requestOption.sortOption ? props.requestOption.sortOption.sort : 'created_at');
@@ -130,10 +131,12 @@ export const useTable = (props: IProp) => {
    */
   const getListData = async (
     customRules: Array<RulesItem> | (() => Array<RulesItem>) = [],
-    type?: string,
+    type = lastType,
     isInvidual = false,
     differenceFields?: Array<string>,
   ) => {
+    if (type) lastType = type;
+
     buildFilter({
       rules: typeof customRules === 'function' ? customRules() : customRules,
       isInvidual,
