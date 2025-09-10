@@ -24,10 +24,6 @@ import (
 	"fmt"
 	"strings"
 
-	jwttoken "hcm/pkg/thirdparty/api-gateway/itsm/jwt-token"
-
-	"github.com/tidwall/gjson"
-
 	"hcm/cmd/cloud-server/logics/audit"
 	"hcm/cmd/cloud-server/service/application/handlers"
 	"hcm/cmd/cloud-server/service/capability"
@@ -45,7 +41,10 @@ import (
 	"hcm/pkg/thirdparty/api-gateway/cmdb"
 	"hcm/pkg/thirdparty/api-gateway/cmsi"
 	"hcm/pkg/thirdparty/api-gateway/itsm"
+	jwttoken "hcm/pkg/thirdparty/api-gateway/itsm/jwt-token"
 	"hcm/pkg/thirdparty/esb"
+
+	"github.com/tidwall/gjson"
 )
 
 // InitApplicationService ...
