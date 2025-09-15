@@ -427,7 +427,6 @@ func (r *Request) doWithHost(client client.HTTPClient, host string, retries int,
 	if err != nil {
 		return &Result{Err: err, Rid: rid}, true
 	}
-
 	if retries > 0 {
 		r.tryThrottle(url)
 	}
@@ -478,12 +477,10 @@ func (r *Request) doWithHost(client client.HTTPClient, host string, retries int,
 		}
 		body = data
 	}
-
 	if logs.V(4) {
 		logs.Infof("http request cost: %dms, %s %s with body %s, response status: %s, response body: %s, rid: "+
 			"%s", time.Since(start)/time.Millisecond, string(r.verb), url, r.body, resp.Status, body, rid)
 	}
-
 	return &Result{
 		Rid:        rid,
 		Body:       body,
