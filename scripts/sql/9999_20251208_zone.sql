@@ -1,7 +1,7 @@
 /*
  * TencentBlueKing is pleased to support the open source community by making
  * 蓝鲸智云 - 混合云管理平台 (BlueKing - Hybrid Cloud Management System) available.
- * Copyright (C) 2022 THL A29 Limited,
+ * Copyright (C) 2024 THL A29 Limited,
  * a Tencent company. All rights reserved.
  * Licensed under the MIT License (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,36 +17,20 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package zone
+/*
+    SQLVER=9999,HCMVER=v9.9.9
 
-import (
-	"hcm/pkg/criteria/validator"
-)
+    Notes:
+    1. 为 zone 表添加 source 字段
+*/
 
-// TCloudZoneListOption define tcloud zone list option.
-type TCloudZoneListOption struct {
-	Region string `json:"region" validate:"required"`
-}
+START TRANSACTION;
 
-// Validate tcloud zone option.
-func (opt TCloudZoneListOption) Validate() error {
+-- 为 zone 表添加 source 字段
+ALTER TABLE `zone`
+    ADD COLUMN `source` varchar(64) NOT NULL DEFAULT 'sync' COMMENT '来源：sync-同步，manually-手动添加' after `state`;
 
-	if err := validator.Validate.Struct(opt); err != nil {
-		return nil
-	}
+CREATE OR REPLACE VIEW `hcm_version`(`hcm_ver`, `sql_ver`) AS
+SELECT 'v9.9.9.9' as `hcm_ver`, '9999' as `sql_ver`;
 
-	return nil
-}
-
-// TCloudZone for cvm ZoneInfo
-type TCloudZone struct {
-	CloudID  string `json:"cloud_id"`
-	ZoneID   string `json:"zone_id"`
-	ZoneName string `json:"zone_name"`
-	State    string `json:"state,omitempty"`
-}
-
-// GetCloudID ...
-func (zone TCloudZone) GetCloudID() string {
-	return zone.CloudID
-}
+COMMIT;

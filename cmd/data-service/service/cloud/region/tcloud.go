@@ -57,8 +57,10 @@ func (svc *regionSvc) BatchCreateTCloudRegion(cts *rest.Contexts) (interface{}, 
 		for _, createReq := range req.Regions {
 			tmpRegion := tableregion.TCloudRegionTable{
 				Vendor:     createReq.Vendor,
+				AccountID:  req.AccountID,
 				RegionID:   createReq.RegionID,
 				RegionName: createReq.RegionName,
+				AreaName:   createReq.AreaName,
 				Status:     createReq.Status,
 				Creator:    cts.Kit.User,
 				Reviser:    cts.Kit.User,
@@ -125,9 +127,9 @@ func (svc *regionSvc) BatchUpdateTCloudRegion(cts *rest.Contexts) error {
 	}
 
 	for _, updateReq := range req.Regions {
-		tmpRegion.Vendor = updateReq.Vendor
 		tmpRegion.RegionID = updateReq.RegionID
 		tmpRegion.RegionName = updateReq.RegionName
+		tmpRegion.AreaName = updateReq.AreaName
 		tmpRegion.Status = updateReq.Status
 
 		err = svc.dao.TCloudRegion().Update(cts.Kit, tools.EqualExpression("id", updateReq.ID), tmpRegion)

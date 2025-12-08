@@ -17,36 +17,9 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package zone
+package constant
 
-import (
-	"hcm/pkg/criteria/validator"
+const (
+	// RegionProductID 地域查询默认产品ID，用于地域管理系统的 DescribeRegions 接口
+	RegionProductID = "cvm"
 )
-
-// TCloudZoneListOption define tcloud zone list option.
-type TCloudZoneListOption struct {
-	Region string `json:"region" validate:"required"`
-}
-
-// Validate tcloud zone option.
-func (opt TCloudZoneListOption) Validate() error {
-
-	if err := validator.Validate.Struct(opt); err != nil {
-		return nil
-	}
-
-	return nil
-}
-
-// TCloudZone for cvm ZoneInfo
-type TCloudZone struct {
-	CloudID  string `json:"cloud_id"`
-	ZoneID   string `json:"zone_id"`
-	ZoneName string `json:"zone_name"`
-	State    string `json:"state,omitempty"`
-}
-
-// GetCloudID ...
-func (zone TCloudZone) GetCloudID() string {
-	return zone.CloudID
-}

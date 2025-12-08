@@ -38,6 +38,7 @@ import (
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
 	cvm "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cvm/v20170312"
 	monitor "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/monitor/v20180724"
+	regionsdk "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/region/v20220627"
 	ssl "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/ssl/v20191205"
 	tag "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tag/v20180813"
 	vpc "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc/v20170312"
@@ -60,6 +61,7 @@ type ClientSet interface {
 	ClbClient(region string) (*clb.Client, error)
 	CertClient() (*ssl.Client, error)
 	TagClient() (*tag.Client, error)
+	RegionClient() (*regionsdk.Client, error)
 	CosClient(opt *typescos.ClientOpt) (*cos.Client, error)
 	MonitorClient(region string) (*monitor.Client, error)
 }
@@ -169,6 +171,17 @@ func (c *clientSet) CertClient() (*ssl.Client, error) {
 // TagClient tcloud tag client
 func (c *clientSet) TagClient() (*tag.Client, error) {
 	client, err := tag.NewClient(c.credential, "", c.profile)
+	if err != nil {
+		return nil, err
+	}
+	client.WithHttpTransport(metric.GetTCloudRecordRoundTripper(nil))
+
+	return client, nil
+}
+
+// RegionClient tcloud sdk region client
+func (c *clientSet) RegionClient() (*regionsdk.Client, error) {
+	client, err := regionsdk.NewClient(c.credential, "", c.profile)
 	if err != nil {
 		return nil, err
 	}

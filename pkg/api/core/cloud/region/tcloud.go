@@ -34,6 +34,7 @@ type TCloudRegion struct {
 	Vendor     enumor.Vendor `json:"vendor"`
 	RegionID   string        `json:"region_id"`
 	RegionName string        `json:"region_name"`
+	AreaName   string        `json:"area_name"`
 	Status     string        `json:"status"`
 	Creator    string        `json:"creator"`
 	Reviser    string        `json:"reviser"`
