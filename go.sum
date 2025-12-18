@@ -320,6 +320,7 @@ github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cvm v1.0.1096/go.mod h1
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/kms v1.0.563/go.mod h1:uom4Nvi9W+Qkom0exYiJ9VWJjXwyxtPYTkKkaLMlfE0=
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/monitor v1.0.1096 h1:4HCMHEBnlF+6gObw7vGJC3laxMUidx9IiiMbc9amm68=
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/monitor v1.0.1096/go.mod h1:ryZ6PnfDHVchHFl7AMp2BurRs87rJ1a/vCsx4Gcj82Y=
+github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/region v1.0.1096 h1:ACr5adDczvChZhSUiIznfc3kW0zpCIj4Btf06fu3fWE=
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/region v1.0.1096/go.mod h1:xIlBieZwbSx3dh+c0ir0vMLjJG5wv+QzXCAYcpGxRHQ=
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/ssl v1.0.1096 h1:7ZmPusU52i5bT9bf5xBeqJclyBx75zFGEIOmiXme9YU=
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/ssl v1.0.1096/go.mod h1:aMpGcDskqqhXtfMaeo2egO61tgh/zt07L1ohSPwmjWk=
