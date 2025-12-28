@@ -125,6 +125,7 @@ func (dSvc *ZoneSvc) ListZone(cts *rest.Contexts) (interface{}, error) {
 
 	switch vendor {
 	case enumor.TCloud, enumor.Aws, enumor.HuaWei, enumor.Azure, enumor.Gcp:
+		// TODO 这些云厂商暂时统一用 listZone 查询明细，屏蔽extension差异，后续应支持单独的ListZoneExt接口
 	default:
 		return nil, errf.Newf(errf.Unknown, "vendor: %s not support", vendor)
 	}
