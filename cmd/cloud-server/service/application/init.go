@@ -48,7 +48,7 @@ import (
 )
 
 // InitApplicationService ...
-func InitApplicationService(c *capability.Capability, bkHcmUrl string) {
+func InitApplicationService(c *capability.Capability, bkApigwHCMURL string) {
 	svc := &applicationSvc{
 		client:     c.ApiClient,
 		audit:      c.Audit,
@@ -56,7 +56,7 @@ func InitApplicationService(c *capability.Capability, bkHcmUrl string) {
 		cipher:     c.Cipher,
 		itsmCli:    c.ItsmCli,
 		esbCli:     c.EsbClient,
-		bkHcmUrl:   bkHcmUrl,
+		bkHcmUrl:   bkApigwHCMURL,
 		cmsiCli:    c.CmsiCli,
 		cmdbCli:    c.CmdbCli,
 	}
