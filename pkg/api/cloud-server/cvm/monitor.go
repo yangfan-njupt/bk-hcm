@@ -44,10 +44,12 @@ func (req *GetMonitorDataReq) Validate() error {
 	return validator.Validate.Struct(req)
 }
 
+// GetMonitorDataResp defines response of get monitor data.
 type GetMonitorDataResp struct {
 	DataPoints []*MonitorDataPointResp `json:"data_points"`
 }
 
+// MonitorDataPointResp defines a single monitor data point response.
 type MonitorDataPointResp struct {
 	ID         string    `json:"id"`
 	IP         []string  `json:"ip"`
