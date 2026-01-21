@@ -40,6 +40,7 @@ require (
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/clb v1.0.1096
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1096
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cvm v1.0.1096
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/monitor v1.0.1096
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/ssl v1.0.1096
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tag v1.0.1096
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.0.1096
