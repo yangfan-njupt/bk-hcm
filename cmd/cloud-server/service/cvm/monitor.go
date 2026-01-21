@@ -43,8 +43,8 @@ func (svc *cvmSvc) GetMonitorData(cts *rest.Contexts) (interface{}, error) {
 
 func (svc *cvmSvc) getMonitorData(cts *rest.Contexts, authHandler handler.ListAuthResHandler) (interface{}, error) {
 	vendor := enumor.Vendor(cts.PathParameter("vendor").String())
-	if len(vendor) == 0 {
-		return nil, errf.New(errf.InvalidParameter, "vendor is required")
+	if err := vendor.Validate(); err != nil {
+		return nil, err
 	}
 
 	req := new(cscvm.GetMonitorDataReq)
