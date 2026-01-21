@@ -32,6 +32,7 @@ import (
 	"hcm/pkg/client"
 	"hcm/pkg/criteria/enumor"
 	"hcm/pkg/criteria/errf"
+	"hcm/pkg/dal/dao/tools"
 	"hcm/pkg/iam/auth"
 	"hcm/pkg/rest"
 	"hcm/pkg/runtime/filter"
@@ -346,10 +347,10 @@ func (dSvc *ZoneSvc) DeleteZone(cts *rest.Contexts) (interface{}, error) {
 	}
 
 	// 通过 id 删除
-	deleteFilter := &filter.Expression{
-		Op:    filter.And,
-		Rules: []filter.RuleFactory{filter.AtomRule{Field: "id", Op: filter.Equal.Factory(), Value: id}},
-	}
+	deleteFilter := tools.ExpressionAnd(
+		tools.RuleEqual("id", id),
+		tools.RuleEqual("vendor", vendorStr),
+	)
 	deleteReq := &dataproto.ZoneBatchDeleteReq{
 		Filter: deleteFilter,
 	}
