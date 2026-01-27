@@ -128,7 +128,7 @@ func ZoneValidate(regionID, zoneStr string) error {
 		return errors.NewTencentCloudSDKError("InvalidParameterValue",
 			"zone 错误", uuid.UUID())
 	}
-	if zones[0].State == "AVAILABLE" {
+	if zones[0].State == "UNAVAILABLE" {
 		return errors.NewTencentCloudSDKError("InvalidParameterValue",
 			"zone 不可用。", uuid.UUID())
 	}

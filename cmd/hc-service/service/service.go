@@ -77,13 +77,13 @@ type Service struct {
 }
 
 // NewService create a service instance.
-func NewService(dis serviced.Discover) (*Service, error) {
+func NewService(sd serviced.ServiceDiscover) (*Service, error) {
 	cli, err := restcli.NewClient(nil)
 	if err != nil {
 		return nil, err
 	}
 
-	cliSet := client.NewClientSet(cli, dis)
+	cliSet := client.NewClientSet(cli, sd)
 
 	cloudAdaptor := cloudadaptor.NewCloudAdaptorClient(cliSet.DataService())
 	logs.Infof("sync concurrent: default %d", cc.HCService().SyncConfig.DefaultConcurrent)

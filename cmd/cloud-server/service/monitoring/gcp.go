@@ -34,15 +34,18 @@ import (
 func (svc *monitoringSvc) GcpListTimeSeries(cts *rest.Contexts) (any, error) {
 	req := new(csmonitoring.GcpListTimeSeriesReq)
 	if err := cts.DecodeInto(req); err != nil {
+		logs.Errorf("decode gcp list time series request failed, err: %v, rid: %s", err, cts.Kit.Rid)
 		return nil, err
 	}
 
 	if err := req.Validate(); err != nil {
+		logs.Errorf("validate gcp list time series request failed, req: %+v, err: %v, rid: %s", req, err, cts.Kit.Rid)
 		return nil, err
 	}
 
 	// Check permission for monitoring data access
 	if err := svc.checkPermission(cts, meta.Monitoring, meta.Find); err != nil {
+		logs.Errorf("check permission failed, user: %s, err: %v, rid: %s", cts.Kit.User, err, cts.Kit.Rid)
 		return nil, err
 	}
 

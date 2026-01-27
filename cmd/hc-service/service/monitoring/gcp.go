@@ -31,10 +31,12 @@ import (
 func (svc *monitoringSvc) GcpListTimeSeries(cts *rest.Contexts) (any, error) {
 	req := new(protomonitoring.GcpListTimeSeriesReq)
 	if err := cts.DecodeInto(req); err != nil {
+		logs.Errorf("decode gcp list time series request failed, err: %v, rid: %s", err, cts.Kit.Rid)
 		return nil, err
 	}
 
 	if err := req.Validate(); err != nil {
+		logs.Errorf("validate gcp list time series request failed, req: %+v, err: %v, rid: %s", req, err, cts.Kit.Rid)
 		return nil, err
 	}
 
@@ -46,6 +48,7 @@ func (svc *monitoringSvc) GcpListTimeSeries(cts *rest.Contexts) (any, error) {
 		return nil, err
 	}
 	if mainAccountInfo.Extension == nil || mainAccountInfo.Extension.CloudProjectID == "" {
+		logs.Errorf("main account: %s cloud project id is empty, rid: %s", req.MainAccountID, cts.Kit.Rid)
 		return nil, fmt.Errorf("main account: %s cloud project id is empty", req.MainAccountID)
 	}
 

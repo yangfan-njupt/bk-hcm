@@ -21,6 +21,8 @@
 package monitoring
 
 import (
+	"net/http"
+
 	"hcm/cmd/cloud-server/service/capability"
 	"hcm/pkg/client"
 	"hcm/pkg/iam/auth"
@@ -36,7 +38,7 @@ func InitMonitoringService(c *capability.Capability) {
 
 	h := rest.NewHandler()
 
-	h.Add("GcpListTimeSeries", "POST", "/vendors/gcp/monitoring/time_series/list", svc.GcpListTimeSeries)
+	h.Add("GcpListTimeSeries", http.MethodPost, "/vendors/gcp/monitoring/time_series/list", svc.GcpListTimeSeries)
 
 	h.Load(c.WebService)
 }

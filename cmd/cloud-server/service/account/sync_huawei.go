@@ -103,22 +103,18 @@ func (a *accountSvc) decodeHuaweiCondSyncRequest(cts *rest.Contexts, resType enu
 	if err := cts.DecodeInto(req); err != nil {
 		return nil, nil, err
 	}
-	if err := req.Validate(); err != nil {
+
+	// 部分资源允许全量同步（不要求必须提供regions参数）
+	allowedSyncAllRes := resType.IsAllowedSyncAll()
+	// 不允许全量同步的资源类型需要 regions 参数
+	// allowedSyncAllRes 为 false 时，needRegion 为 true，表示需要 regions 参数
+	if err := req.Validate(!allowedSyncAllRes); err != nil {
 		return nil, nil, err
 	}
 
 	syncFunc, ok := huawei.GetCondSyncFunc(resType)
 	if !ok {
 		return nil, nil, fmt.Errorf("huawei conditional sync resource does not support %s", resType)
-	}
-
-	if resType == enumor.RegionCloudResType {
-		// region 同步不需要 regions 参数，直接返回
-		return req, syncFunc, nil
-	}
-
-	if err := req.Validate(); err != nil {
-		return nil, nil, err
 	}
 
 	var rules []*filter.AtomRule
