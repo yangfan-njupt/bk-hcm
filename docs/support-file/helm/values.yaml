@@ -687,6 +687,9 @@ apigwRegister:
     tag:
   ## 需注册的网关名
   apigwName: "bk-hcm"
+  ## 需自动授权的app code
+  grantPerm:
+    bkApiITSMAppCode: "cw_aitsm"
   ## 蓝鲸 APIGateway url模板
   bkApiUrlTmpl: "http://bkapi.example.com/api/{api_name}"
   ## 网关负责人，多个使用英文逗号分隔
