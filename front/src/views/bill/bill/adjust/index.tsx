@@ -255,7 +255,13 @@ export default defineComponent({
                 </>
               ),
               operationBarEnd: () => (
-                <Amount isAdjust api={billStore.sum_adjust_items} payload={() => amountFilter.value} ref={amountRef} />
+                <Amount
+                  isAdjust
+                  immediate
+                  api={billStore.sum_adjust_items}
+                  payload={() => amountFilter.value}
+                  ref={amountRef}
+                />
               ),
             }}
           </CommonTable>

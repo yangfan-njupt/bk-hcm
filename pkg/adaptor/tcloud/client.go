@@ -37,6 +37,8 @@ import (
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
 	cvm "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cvm/v20170312"
+	monitor "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/monitor/v20180724"
+	regionsdk "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/region/v20220627"
 	ssl "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/ssl/v20191205"
 	tag "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tag/v20180813"
 	vpc "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc/v20170312"
@@ -59,7 +61,9 @@ type ClientSet interface {
 	ClbClient(region string) (*clb.Client, error)
 	CertClient() (*ssl.Client, error)
 	TagClient() (*tag.Client, error)
+	RegionClient() (*regionsdk.Client, error)
 	CosClient(opt *typescos.ClientOpt) (*cos.Client, error)
+	MonitorClient(region string) (*monitor.Client, error)
 }
 
 // clientSet to get tcloud sdk client set
@@ -175,6 +179,17 @@ func (c *clientSet) TagClient() (*tag.Client, error) {
 	return client, nil
 }
 
+// RegionClient tcloud sdk region client
+func (c *clientSet) RegionClient() (*regionsdk.Client, error) {
+	client, err := regionsdk.NewClient(c.credential, "", c.profile)
+	if err != nil {
+		return nil, err
+	}
+	client.WithHttpTransport(metric.GetTCloudRecordRoundTripper(nil))
+
+	return client, nil
+}
+
 var cosUrlMap = map[typescos.UrlType]string{
 	typescos.NormalUrl:            "https://service.cos.myqcloud.com",
 	typescos.UrlWithNameAndRegion: "https://%s.cos.%s.myqcloud.com",
@@ -199,6 +214,17 @@ func (c *clientSet) CosClient(opt *typescos.ClientOpt) (*cos.Client, error) {
 			},
 		},
 	)
+
+	return client, nil
+}
+
+// MonitorClient tcloud monitor client
+func (c *clientSet) MonitorClient(region string) (*monitor.Client, error) {
+	client, err := monitor.NewClient(c.credential, region, c.profile)
+	if err != nil {
+		return nil, err
+	}
+	client.WithHttpTransport(metric.GetTCloudRecordRoundTripper(nil))
 
 	return client, nil
 }
