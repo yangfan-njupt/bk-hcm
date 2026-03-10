@@ -89,12 +89,12 @@ func (svc *lbSvc) inquiryPriceLoadBalancer(kt *kit.Kit, req *cloudserver.Resourc
 }
 
 func (svc *lbSvc) inquiryPriceTCloudLoadBalancer(kt *kit.Kit, body json.RawMessage) (any, error) {
-	req := new(hcproto.TCloudLoadBalancerCreateReq)
+	req := new(hcproto.TCloudLoadBalancerInquiryReq)
 	if err := json.Unmarshal(body, req); err != nil {
 		return nil, errf.NewFromErr(errf.DecodeRequestFailed, err)
 	}
 
-	if err := req.Validate(false); err != nil {
+	if err := req.Validate(); err != nil {
 		return nil, errf.NewFromErr(errf.InvalidParameter, err)
 	}
 	result, err := svc.client.HCService().TCloud.Clb.InquiryPrice(kt, req)

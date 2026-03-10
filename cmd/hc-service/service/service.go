@@ -45,6 +45,7 @@ import (
 	instancetype "hcm/cmd/hc-service/service/instance-type"
 	loadbalancer "hcm/cmd/hc-service/service/load-balancer"
 	mainaccount "hcm/cmd/hc-service/service/main-account"
+	"hcm/cmd/hc-service/service/monitoring"
 	routetable "hcm/cmd/hc-service/service/route-table"
 	securitygroup "hcm/cmd/hc-service/service/security-group"
 	"hcm/cmd/hc-service/service/subnet"
@@ -77,13 +78,13 @@ type Service struct {
 }
 
 // NewService create a service instance.
-func NewService(dis serviced.Discover) (*Service, error) {
+func NewService(sd serviced.ServiceDiscover) (*Service, error) {
 	cli, err := restcli.NewClient(nil)
 	if err != nil {
 		return nil, err
 	}
 
-	cliSet := client.NewClientSet(cli, dis)
+	cliSet := client.NewClientSet(cli, sd)
 
 	cloudAdaptor := cloudadaptor.NewCloudAdaptorClient(cliSet.DataService())
 	logs.Infof("sync concurrent: default %d", cc.HCService().SyncConfig.DefaultConcurrent)
@@ -200,6 +201,7 @@ func (s *Service) apiSet() *restful.Container {
 	image.InitImageService(c)
 	tag.InitTagService(c)
 	cos.InitCosService(c)
+	monitoring.InitMonitoringService(c)
 
 	return restful.NewContainer().Add(c.WebService)
 }

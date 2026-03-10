@@ -1,14 +1,13 @@
-import { computed, defineComponent, PropType, ref } from 'vue';
+import { computed, defineComponent, PropType } from 'vue';
 import { useI18n } from 'vue-i18n';
-import routerAction from '@/router/utils/action';
 import { Senarios, useWhereAmI } from '@/hooks/useWhereAmI';
 import { AUTH_BIZ_CREATE_CLB, AUTH_CREATE_CLB } from '@/constants/auth-symbols';
 import type { ApplyClbModel } from '@/api/load_balancers/apply-clb/types';
-import { MENU_SERVICE_TICKET_MANAGEMENT } from '@/constants/menu-symbol';
 
 export default defineComponent({
   props: {
     list: Array as PropType<ApplyClbModel[]>,
+    loading: Boolean as PropType<boolean>,
     onConfirm: Function as PropType<(params: ApplyClbModel[], url: string) => void>,
     onCancel: Function as PropType<() => void>,
   },
@@ -21,8 +20,6 @@ export default defineComponent({
     const createClbAuthSymbol = computed(() => {
       return whereAmI.value === Senarios.business ? AUTH_BIZ_CREATE_CLB : AUTH_CREATE_CLB;
     });
-
-    const applyLoading = ref(false);
 
     const isOpen = (loadbalancerType: 'OPEN' | 'INTERNAL') => loadbalancerType === 'OPEN';
     const isIpv4 = (addressIP: 'IPV4' | 'IPv6FullChain' | 'IPV6') => addressIP === 'IPV4';
@@ -47,6 +44,7 @@ export default defineComponent({
     const handleParams = (formModel: ApplyClbModel) => {
       const { load_balancer_type } = formModel;
       const isOpenVal = isOpen(load_balancer_type);
+      // eslint-disable-next-line
       const zones = hasZonesConfig(formModel) ? (formModel.zones ? [formModel.zones] : []) : undefined;
       const vipIsp = isOpenVal ? formModel.vip_isp : undefined;
 
@@ -77,6 +75,11 @@ export default defineComponent({
             : undefined,
         // 内网下支持EIP
         cloud_eip_id: !isOpenVal ? formModel.cloud_eip_id ?? undefined : undefined,
+        // 带宽包ID只在公网且计费模式为带宽包时才传递
+        bandwidth_package_id:
+          isOpenVal && formModel.internet_charge_type === 'BANDWIDTH_PACKAGE'
+            ? formModel.bandwidth_package_id
+            : undefined,
         // 后端无用字段
         account_type: undefined as undefined,
         zoneType: undefined as undefined,
@@ -84,27 +87,10 @@ export default defineComponent({
       };
     };
     const handleConfirm = async () => {
-      applyLoading.value = true;
-      try {
-        const { list } = props;
-        if (!list.length) return;
-        const { vendor } = list[0];
-        const url = isBusinessPage
-          ? `/api/v1/cloud/vendors/${vendor}/applications/types/create_load_balancer`
-          : `/api/v1/cloud/load_balancers/create`;
-
-        const params = list.map((item: ApplyClbModel) => handleParams(item));
-        emit('confirm', params, url);
-        setTimeout(
-          () => routerAction.redirect({ name: MENU_SERVICE_TICKET_MANAGEMENT, query: { type: 'load_balancer' } }),
-          300,
-        );
-      } catch (error) {
-        console.error(error);
-        return Promise.reject(error);
-      } finally {
-        applyLoading.value = false;
-      }
+      const { list } = props;
+      if (!list.length) return;
+      const params = list.map((item: ApplyClbModel) => handleParams(item));
+      emit('confirm', params);
     };
     const handleCancel = () => {
       emit('cancel');
@@ -118,7 +104,7 @@ export default defineComponent({
               <bk-button
                 theme='primary'
                 onClick={handleConfirm}
-                loading={applyLoading.value}
+                loading={props.loading}
                 disabled={!props.list.length || props.list.length > 5 || noPerm}>
                 {t('提交')}
               </bk-button>

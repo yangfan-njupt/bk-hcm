@@ -181,13 +181,13 @@ const (
 type TCloudCreateOption struct {
 	DryRun                  bool                         `json:"dry_run" validate:"omitempty"`
 	Region                  string                       `json:"region" validate:"required"`
-	Name                    string                       `json:"name" validate:"required"`
+	Name                    string                       `json:"name" validate:"omitempty"`
 	Zone                    string                       `json:"zone" validate:"required"`
 	InstanceType            string                       `json:"instance_type" validate:"required"`
 	CloudImageID            string                       `json:"cloud_image_id" validate:"required"`
-	Password                string                       `json:"password" validate:"required"`
+	Password                string                       `json:"password" validate:"omitempty"`
 	RequiredCount           int64                        `json:"required_count" validate:"required"`
-	CloudSecurityGroupIDs   []string                     `json:"cloud_security_group_ids" validate:"required"`
+	CloudSecurityGroupIDs   []string                     `json:"cloud_security_group_ids" validate:"omitempty"`
 	ClientToken             *string                      `json:"client_token" validate:"omitempty"`
 	CloudVpcID              string                       `json:"cloud_vpc_id" validate:"required"`
 	CloudSubnetID           string                       `json:"cloud_subnet_id" validate:"required"`
@@ -470,4 +470,39 @@ type LocalDiskType struct {
 	MinSize       int64  `json:"min_size"`       // 本地磁盘最小值
 	MaxSize       int64  `json:"max_size"`       // 本地磁盘最大值
 	Required      string `json:"required"`       // 购买时本地盘是否为必选。取值范围：REQUIRED：表示必选 OPTIONAL：表示可选。
+}
+
+// -------------------------- Monitor --------------------------
+
+// TCloudMonitorDataOption defines options to get monitor data from tcloud.
+type TCloudMonitorDataOption struct {
+	Region      string   `json:"region" validate:"required"`
+	MetricName  string   `json:"metric_name" validate:"required"`
+	Period      int64    `json:"period" validate:"required,min=60"`
+	StartTime   string   `json:"start_time" validate:"required"` // ISO8601 format
+	EndTime     string   `json:"end_time" validate:"required"`   // ISO8601 format
+	InstanceIDs []string `json:"instance_ids" validate:"required,min=1,max=20"`
+}
+
+// Validate tcloud monitor data option.
+func (opt TCloudMonitorDataOption) Validate() error {
+	return validator.Validate.Struct(opt)
+}
+
+// TCloudMonitorDataResult defines tcloud monitor data result.
+type TCloudMonitorDataResult struct {
+	DataPoints []*MonitorDataPoint `json:"data_points"`
+}
+
+// MonitorDataPoint defines a single monitor data point.
+type MonitorDataPoint struct {
+	Dimensions []*MonitorDimension `json:"dimensions"`
+	Timestamps []int64             `json:"timestamps"`
+	Values     []float64           `json:"values"`
+}
+
+// MonitorDimension defines monitor dimension.
+type MonitorDimension struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
