@@ -438,8 +438,8 @@ func genEipResource(a *meta.ResourceAttribute) (iam.ActionID, []iam.Resource, er
 }
 
 // genMonitoringResource generate monitoring related iam resource.
-func genMonitoringResource(a *meta.ResourceAttribute) (client.ActionID, []client.Resource, error) {
-	res := client.Resource{
+func genMonitoringResource(a *meta.ResourceAttribute) (iam.ActionID, []iam.Resource, error) {
+	res := iam.Resource{
 		System: sys.SystemIDHCM,
 		Type:   sys.Account,
 		ID:     a.ResourceID,
@@ -447,7 +447,7 @@ func genMonitoringResource(a *meta.ResourceAttribute) (client.ActionID, []client
 
 	switch a.Basic.Action {
 	case meta.Find:
-		return sys.ResourceFind, []client.Resource{res}, nil
+		return sys.ResourceFind, []iam.Resource{res}, nil
 	default:
 		return "", nil, errf.Newf(errf.InvalidParameter, "unsupported hcm action: %s", a.Basic.Action)
 	}
