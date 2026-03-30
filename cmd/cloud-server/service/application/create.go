@@ -79,6 +79,27 @@ func decodeCommonReqAndValidate(cts *rest.Contexts) (*proto.CreateCommonReq, err
 	return req, nil
 }
 
+func decodeSysCommonReqAndValidate(cts *rest.Contexts) (*proto.SysCreateCommonReq, error) {
+	bytes, err := cts.RequestBody()
+	if err != nil {
+		logs.Errorf("get request body failed, err: %v, rid: %s", err, cts.Kit.Rid)
+		return nil, err
+	}
+
+	req := new(proto.SysCreateCommonReq)
+	if err = json.Unmarshal(bytes, req); err != nil {
+		logs.Errorf("unmarshal sys create common req failed, err: %v, rid: %s", err, cts.Kit.Rid)
+		return nil, err
+	}
+
+	if err = req.Validate(); err != nil {
+		logs.Errorf("sys create common request validate failed, err: %v, rid: %s", err, cts.Kit.Rid)
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // create 创建申请单的通用逻辑
 func (a *applicationSvc) create(cts *rest.Contexts, req *proto.CreateCommonReq,
 	handler handlers.ApplicationHandler) (interface{}, error) {
@@ -425,6 +446,38 @@ func (a *applicationSvc) CreateForCreateLB(cts *rest.Contexts) (interface{}, err
 	}
 
 	return nil, nil
+}
+
+// SysCreateForCreateLB creates a CLB application on behalf of a specified applicant for system-level callers.
+func (a *applicationSvc) SysCreateForCreateLB(cts *rest.Contexts) (interface{}, error) {
+	vendor := enumor.Vendor(cts.Request.PathParameter("vendor"))
+	if err := vendor.Validate(); err != nil {
+		return nil, errf.NewFromErr(errf.InvalidParameter, err)
+	}
+
+	commReq, err := decodeSysCommonReqAndValidate(cts)
+	if err != nil {
+		return nil, errf.NewFromErr(errf.InvalidParameter, err)
+	}
+
+	if err := a.checkApplyResPermission(cts, meta.LoadBalancer); err != nil {
+		return nil, err
+	}
+
+	cts.Kit.User = commReq.Applicant
+	opt := a.getHandlerOption(cts)
+
+	switch vendor {
+	case enumor.TCloud:
+		req, err := parseReqFromRequestBody[hclb.TCloudLoadBalancerCreateReq](cts)
+		if err != nil {
+			return nil, err
+		}
+		handler := lbtcloud.NewApplicationOfCreateTCloudLB(opt, req)
+		return a.create(cts, &commReq.CreateCommonReq, handler)
+	}
+
+	return nil, errf.Newf(errf.InvalidParameter, "unsupported vendor: %s", vendor)
 }
 
 // CreateForCreateMainAccount ...
