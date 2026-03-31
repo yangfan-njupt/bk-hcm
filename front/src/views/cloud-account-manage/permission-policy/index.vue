@@ -8,7 +8,7 @@ import { ModelPropertyColumn, ModelPropertySearch } from '@/model/typings';
 import { transformSimpleCondition, localPaginate, localSort } from '@/utils/search';
 import { VendorEnum } from '@/common/constant';
 import { QueryFilterType, RulesItem } from '@/typings';
-
+import { usePermissionPolicyStore } from '@/store/clount-account-manage/permission-policy';
 import Search from './children/search/search.vue';
 import DataList from './children/data-list/data-list.vue';
 import PolicyFormSideslider from './children/policy-form-sideslider/index.vue';
@@ -18,7 +18,6 @@ import LogSideslider from './children/log-sideslider/index.vue';
 import { SearchConditionFactory } from './children/search/condition-factory';
 import { TableColumnFactory } from './children/data-list/column-factory';
 import type { IPermissionPolicyItem } from './typings';
-import { ENABLE_MOCK, MOCK_PERMISSION_POLICY_LIST } from './constants';
 
 export type ISearchCondition = Record<string, any>;
 
@@ -26,8 +25,9 @@ const currentVendor = inject<Ref<VendorEnum>>('currentVendor', ref(VendorEnum.TC
 
 const route = useRoute();
 const router = useRouter();
-const { getBizsId: _getBizsId } = useWhereAmI();
+const { isBusinessPage } = useWhereAmI();
 
+const permissionPolicyStore = usePermissionPolicyStore();
 // 创建模型实例
 const searchModel = SearchConditionFactory.createModel();
 const columnModel = TableColumnFactory.createModel();
@@ -81,7 +81,7 @@ const loadFullList = async () => {
 
     // 构建 filter，加入云厂商 vendor 条件
     const baseFilter = transformSimpleCondition(condition.value, searchFields.value);
-    const _vendorFilter: QueryFilterType = {
+    const vendorFilter: QueryFilterType = {
       op: 'and',
       rules: [
         ...((baseFilter?.rules || []) as RulesItem[]),
@@ -93,35 +93,10 @@ const loadFullList = async () => {
       ],
     };
 
-    if (ENABLE_MOCK) {
-      // Mock 模式：使用本地模拟数据，并根据搜索条件前端过滤
-      let mockData = MOCK_PERMISSION_POLICY_LIST.filter((item) => item.vendor === currentVendor.value);
-
-      // 前端搜索过滤
-      const cond = condition.value;
-      if (cond.name) {
-        mockData = mockData.filter((item) => item.name.toLowerCase().includes(cond.name.toLowerCase()));
-      }
-      if (cond.description) {
-        mockData = mockData.filter((item) => item.description.includes(cond.description));
-      }
-      if (cond.creator) {
-        mockData = mockData.filter((item) => item.creator === cond.creator);
-      }
-      if (cond.reviser) {
-        mockData = mockData.filter((item) => item.reviser === cond.reviser);
-      }
-
-      fullList.value = mockData;
-      pagination.count = mockData.length;
-      updateTableData();
-      return;
-    }
-
-    // TODO: 替换为真实API调用
-    // const list = await permissionPolicyStore.getPermissionPolicyFullList(getBizsId(), vendorFilter);
-    fullList.value = [];
-    pagination.count = 0;
+    // 使用 rollRequest 获取全量数据
+    const list = await permissionPolicyStore.getPermissionPolicyFullList(currentVendor.value, vendorFilter);
+    fullList.value = list;
+    pagination.count = list.length;
     updateTableData();
   } catch (error) {
     console.error('获取权限策略库列表失败:', error);
@@ -208,18 +183,18 @@ const refreshList = () => {
 // 新建/编辑权限策略库状态
 const showPolicyFormSideslider = ref(false);
 const isEditMode = ref(false);
-const editingAccount = ref<IPermissionPolicyItem | null>(null);
+const editingData = ref<IPermissionPolicyItem | null>(null);
 
-const handleAddPolicy = () => {
+const handleAddPolicy = (row: IPermissionPolicyItem) => {
   isEditMode.value = false;
-  editingAccount.value = null;
+  editingData.value = row;
   showPolicyFormSideslider.value = true;
 };
 
 // 编辑权限策略（从列表操作列触发）
 const handleEditAccount = (row: IPermissionPolicyItem) => {
   isEditMode.value = true;
-  editingAccount.value = row;
+  editingData.value = row;
   showPolicyFormSideslider.value = true;
 };
 
@@ -244,7 +219,7 @@ const handleReset = () => {
     <!-- 表格区域 -->
     <div class="table-container">
       <!-- 操作按钮区域 -->
-      <div class="action-btns">
+      <div class="action-btns" v-if="!isBusinessPage">
         <bk-button theme="primary" @click="handleAddPolicy">
           <plus style="font-size: 22px" />
           新增权限策略库
@@ -280,7 +255,7 @@ const handleReset = () => {
     <PolicyFormSideslider
       v-model="showPolicyFormSideslider"
       :is-edit="isEditMode"
-      :account-data="editingAccount"
+      :permission-policy-data="editingData"
       @success="handlePolicyFormSuccess"
     />
   </div>

@@ -211,6 +211,13 @@ func genResourceAccessActionGroups() client.ActionGroup {
 					{ID: CosBucketDelete},
 				},
 			},
+			{
+				Name:   "云资源",
+				NameEn: "Cloud Resource",
+				Actions: []client.ActionWithID{
+					{ID: CloudVendorConfig},
+				},
+			},
 		},
 	}
 }
