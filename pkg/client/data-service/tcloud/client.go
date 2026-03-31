@@ -38,6 +38,7 @@ type Client struct {
 	SubAccountSecret *SubAccountSecretClient
 	LoadBalancer     *LoadBalancerClient
 	AccountSecret    *AccountSecretClient
+	PermissionPolicyLibrary *PermissionPolicyLibraryClient
 }
 
 type restClient struct {
@@ -60,5 +61,6 @@ func NewClient(client rest.ClientInterface) *Client {
 		SubAccountSecret: NewSubAccountSecretClient(client),
 		LoadBalancer:     NewLoadBalancerClient(client),
 		AccountSecret:    NewAccountSecretClient(client),
+		PermissionPolicyLibrary: NewPermissionPolicyLibraryClient(client),
 	}
 }
