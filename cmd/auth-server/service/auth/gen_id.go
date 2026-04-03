@@ -875,3 +875,13 @@ func genGlobalConfigResource(a *meta.ResourceAttribute) (iam.ActionID, []iam.Res
 		return "", nil, errf.Newf(errf.InvalidParameter, "unsupported hcm action: %s", a.Basic.Action)
 	}
 }
+
+// genPermissionPolicyLibraryResource generate permission policy library related iam resource.
+func genPermissionPolicyLibraryResource(a *meta.ResourceAttribute) (iam.ActionID, []iam.Resource, error) {
+	switch a.Basic.Action {
+	case meta.Create, meta.Find, meta.Update, meta.Delete:
+		return sys.CloudVendorConfig, make([]iam.Resource, 0), nil
+	default:
+		return "", nil, errf.Newf(errf.InvalidParameter, "unsupported hcm action: %s", a.Basic.Action)
+	}
+}

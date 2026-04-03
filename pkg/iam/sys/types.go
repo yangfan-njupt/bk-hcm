@@ -212,6 +212,9 @@ const (
 	// CosBucketDelete cos bucket delete action id to register iam.
 	CosBucketDelete iam.ActionID = "cos_bucket_delete"
 
+	// CloudVendorConfig cloud vendor config action id to register iam.
+	CloudVendorConfig iam.ActionID = "cloud_vendor_config"
+
 	// Skip is an action that no need to auth
 	Skip iam.ActionID = "skip"
 )
@@ -280,4 +283,6 @@ var ActionIDNameMap = map[iam.ActionID]string{
 	CosBucketCreate: "COS桶创建",
 	CosBucketFind:   "COS桶查询",
 	CosBucketDelete: "COS桶删除",
+
+	CloudVendorConfig: "云厂商配置",
 }

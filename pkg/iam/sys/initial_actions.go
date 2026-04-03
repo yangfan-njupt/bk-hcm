@@ -312,6 +312,7 @@ func genResourceAccessActions() []iam.ResourceAction {
 		Version:              1,
 	}}...)
 	actions = append(actions, genCosResAccessActions()...)
+	actions = append(actions, genCloudVendorConfigAccessActions()...)
 	return actions
 }
 
@@ -569,6 +570,20 @@ func genCosResAccessActions() []iam.ResourceAction {
 			NameEn:               "COS Bucket Delete",
 			Type:                 Delete,
 			RelatedResourceTypes: accountResource,
+			RelatedActions:       nil,
+			Version:              1,
+		},
+	}
+}
+
+func genCloudVendorConfigAccessActions() []iam.ResourceAction {
+	return []iam.ResourceAction{
+		{
+			ID:                   CloudVendorConfig,
+			Name:                 ActionIDNameMap[CloudVendorConfig],
+			NameEn:               "Cloud Vendor Config",
+			Type:                 Edit,
+			RelatedResourceTypes: nil,
 			RelatedActions:       nil,
 			Version:              1,
 		},
