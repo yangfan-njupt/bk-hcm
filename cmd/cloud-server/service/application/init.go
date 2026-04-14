@@ -76,6 +76,8 @@ func InitApplicationService(c *capability.Capability, bkHcmUrl string) {
 		"/vendors/{vendor}/applications/types/create_disk", svc.CreateForCreateDisk)
 	h.Add("CreateForCreateLB", http.MethodPost,
 		"/vendors/{vendor}/applications/types/create_load_balancer", svc.CreateForCreateLB)
+	h.Add("SysCreateForCreateLB", "POST",
+		"/vendors/{vendor}/system/applications/types/create_load_balancer", svc.SysCreateForCreateLB)
 
 	h.Add("CreateForCreateMainAccount", http.MethodPost,
 		"/applications/types/create_main_account", svc.CreateForCreateMainAccount)
@@ -95,6 +97,8 @@ func InitApplicationService(c *capability.Capability, bkHcmUrl string) {
 
 func bizService(h *rest.Handler, svc *applicationSvc) {
 	h.Add("ListBizApplications", http.MethodPost, "/applications/list", svc.ListBizApplications)
+	h.Add("GetBizApplication", "GET", "/applications/{application_id}", svc.GetBizApplication)
+
 	h.Add("CreateBizForAddAccount", http.MethodPost, "/applications/types/add_account", svc.CreateBizForAddAccount)
 
 	h.Add("CreateBizForAddSubAccount", http.MethodPost,
@@ -105,7 +109,6 @@ func bizService(h *rest.Handler, svc *applicationSvc) {
 
 	h.Add("CreateBizForDeleteSubAccount", http.MethodPost,
 		"/vendors/{vendor}/applications/types/delete_sub_account", svc.CreateBizForDeleteSubAccount)
-
 }
 
 type applicationSvc struct {
