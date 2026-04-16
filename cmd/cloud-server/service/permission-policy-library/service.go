@@ -52,14 +52,35 @@ func InitService(c *capability.Capability) {
 		"/vendors/{vendor}/permission_policy_libraries/{id}/apply", svc.ApplyPermissionPolicyLibraryCreate)
 	h.Add("ApplyPermissionPolicyLibraryUpdate", http.MethodPut,
 		"/vendors/{vendor}/permission_policy_libraries/{id}/apply", svc.ApplyPermissionPolicyLibraryUpdate)
-	h.Add("ListPermissionPolicyLibraryUnappliedAccountIDs", http.MethodGet,
+	h.Add("ListPermissionPolicyLibraryUnAppliedAccountIDs", http.MethodGet,
 		"/vendors/{vendor}/permission_policy_libraries/{id}/unapplied_account_ids",
-		svc.ListPermissionPolicyLibraryUnappliedAccountIDs)
+		svc.ListPermissionPolicyLibraryUnAppliedAccountIDs)
 	h.Add("ListPermissionPolicyLibraryPermissionTemplates", http.MethodGet,
 		"/vendors/{vendor}/permission_policy_libraries/{id}/permission_templates",
 		svc.ListPermissionPolicyLibraryPermissionTemplates)
+	h.Add("ListPermissionPolicyLibraryAccountIDs", http.MethodGet,
+		"/vendors/{vendor}/permission_policy_libraries/{id}/account_ids", svc.ListPermissionPolicyLibraryAccountIDs)
+
+	bizH := rest.NewHandler()
+	bizH.Path("/bizs/{bk_biz_id}")
+	bizService(bizH, svc)
 
 	h.Load(c.WebService)
+	bizH.Load(c.WebService)
+}
+
+func bizService(h *rest.Handler, svc *svc) {
+	h.Add("ListBizPermissionPolicyLibrary", http.MethodPost, "/vendors/{vendor}/permission_policy_libraries/list",
+		svc.ListBizPermissionPolicyLibrary)
+	h.Add("ListBizPermissionPolicyLibraryAccountIDs", http.MethodGet,
+		"/vendors/{vendor}/permission_policy_libraries/{id}/account_ids",
+		svc.ListBizPermissionPolicyLibraryAccountIDs)
+	h.Add("ListBizPermissionPolicyLibraryUnAppliedAccountIDs", http.MethodGet,
+		"/vendors/{vendor}/permission_policy_libraries/{id}/unapplied_account_ids",
+		svc.ListBizPermissionPolicyLibraryUnAppliedAccountIDs)
+	h.Add("ListBizPermissionPolicyLibraryPermissionTemplates", http.MethodGet,
+		"/vendors/{vendor}/permission_policy_libraries/{id}/permission_templates",
+		svc.ListBizPermissionPolicyLibraryPermissionTemplates)
 }
 
 type svc struct {

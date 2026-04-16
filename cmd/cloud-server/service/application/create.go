@@ -37,6 +37,8 @@ import (
 	lbtcloud "hcm/cmd/cloud-server/service/application/handlers/load_balancer/tcloud"
 	createmainaccount "hcm/cmd/cloud-server/service/application/handlers/main-account/create-main-account"
 	updatemainaccount "hcm/cmd/cloud-server/service/application/handlers/main-account/update-main-account"
+	applycreate "hcm/cmd/cloud-server/service/application/handlers/permission-policy-library/apply-create"
+	applyupdate "hcm/cmd/cloud-server/service/application/handlers/permission-policy-library/apply-update"
 	subaccount "hcm/cmd/cloud-server/service/application/handlers/sub-account"
 	createsubaccount "hcm/cmd/cloud-server/service/application/handlers/sub-account/create-sub-account"
 	deletesubaccount "hcm/cmd/cloud-server/service/application/handlers/sub-account/delete-sub-account"
@@ -152,7 +154,8 @@ func (a *applicationSvc) createApplication(cts *rest.Contexts, req *proto.Create
 	var bkBizIDs = make([]int64, 0)
 	if applicationType == enumor.CreateCvm || applicationType == enumor.CreateDisk ||
 		applicationType == enumor.CreateVpc || applicationType == enumor.CreateLoadBalancer ||
-		applicationType == enumor.AddAccount || applicationType == enumor.OperateSubAccount {
+		applicationType == enumor.AddAccount || applicationType == enumor.OperateSubAccount ||
+		applicationType == enumor.ApplyPermissionPolicyLibrary {
 		bkBizIDs = handler.GetBkBizIDs()
 	}
 	return a.client.DataService().Global.Application.CreateApplication(
@@ -196,7 +199,11 @@ func (a *applicationSvc) createItsmTicket(cts *rest.Contexts, handler handlers.A
 	}
 
 	// 获取ITSM单据涉及到的各个节点审批人
-	approvers := handler.GetItsmApprover(managers)
+	approvers, err := handler.GetItsmApprover(cts.Kit, managers)
+	if err != nil {
+		logs.Errorf("get itsm approver failed, err: %v, rid: %s", err, cts.Kit.Rid)
+		return "", fmt.Errorf("get itsm approver failed, err: %v", err)
+	}
 
 	sn, err := a.itsmCli.CreateTicket(
 		cts.Kit,
@@ -845,4 +852,124 @@ func (a *applicationSvc) listSubAccountBasicInfo(cts *rest.Contexts, subAccountI
 	}
 
 	return infoMap, nil
+}
+
+// CreateBizForApplyPermissionPolicyLibraryCreate creates ITSM applications for applying a
+// permission policy library (create action) to multiple accounts.
+func (a *applicationSvc) CreateBizForApplyPermissionPolicyLibraryCreate(cts *rest.Contexts) (interface{}, error) {
+	bizID, err := cts.PathParameter("bk_biz_id").Int64()
+	if err != nil {
+		return nil, err
+	}
+	if bizID <= 0 {
+		return nil, errf.New(errf.InvalidParameter, "biz id is invalid")
+	}
+
+	authRes := meta.ResourceAttribute{Basic: &meta.Basic{Type: meta.PermissionPolicyLibrary, Action: meta.Apply},
+		BizID: bizID}
+	if err = a.authorizer.AuthorizeWithPerm(cts.Kit, authRes); err != nil {
+		return nil, err
+	}
+
+	vendor := enumor.Vendor(cts.Request.PathParameter("vendor"))
+	if err = vendor.Validate(); err != nil {
+		return nil, errf.NewFromErr(errf.InvalidParameter, err)
+	}
+
+	req, err := parseReqFromRequestBody[proto.BizApplyPermissionPolicyLibraryCreateReq](cts)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = req.Validate(); err != nil {
+		return nil, errf.NewFromErr(errf.InvalidParameter, err)
+	}
+
+	return a.createBizForApplyPermPolicyLibCreate(cts, bizID, vendor, req)
+}
+
+func (a *applicationSvc) createBizForApplyPermPolicyLibCreate(cts *rest.Contexts, bizID int64, vendor enumor.Vendor,
+	req *proto.BizApplyPermissionPolicyLibraryCreateReq) (*core.BatchCreateResult, error) {
+
+	opt := a.getHandlerOption(cts)
+	ids := make([]string, 0, len(req.AccountIDs))
+
+	for _, accountID := range req.AccountIDs {
+		content := applycreate.BuildContent(bizID, vendor, req, accountID)
+		handler := applycreate.NewApplicationOfApplyPermPolicyLibCreate(opt, content)
+		result, err := a.create(cts, &proto.CreateCommonReq{}, handler)
+		if err != nil {
+			return nil, errf.NewFromErr(errf.Aborted,
+				fmt.Errorf("create application for account %s failed, err: %w", accountID, err))
+		}
+
+		createResult, ok := result.(*core.CreateResult)
+		if !ok {
+			return nil, errf.New(errf.Aborted, "create application result type assertion failed")
+		}
+
+		ids = append(ids, createResult.ID)
+	}
+
+	return &core.BatchCreateResult{IDs: ids}, nil
+}
+
+// CreateBizForApplyPermissionPolicyLibraryUpdate creates ITSM applications for applying a
+// permission policy library (update action) to multiple accounts.
+func (a *applicationSvc) CreateBizForApplyPermissionPolicyLibraryUpdate(cts *rest.Contexts) (interface{}, error) {
+	bizID, err := cts.PathParameter("bk_biz_id").Int64()
+	if err != nil {
+		return nil, err
+	}
+	if bizID <= 0 {
+		return nil, errf.New(errf.InvalidParameter, "biz id is invalid")
+	}
+
+	authRes := meta.ResourceAttribute{Basic: &meta.Basic{Type: meta.PermissionPolicyLibrary, Action: meta.Apply},
+		BizID: bizID}
+	if err = a.authorizer.AuthorizeWithPerm(cts.Kit, authRes); err != nil {
+		return nil, err
+	}
+
+	vendor := enumor.Vendor(cts.Request.PathParameter("vendor"))
+	if err = vendor.Validate(); err != nil {
+		return nil, errf.NewFromErr(errf.InvalidParameter, err)
+	}
+
+	req, err := parseReqFromRequestBody[proto.BizApplyPermissionPolicyLibraryUpdateReq](cts)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = req.Validate(); err != nil {
+		return nil, errf.NewFromErr(errf.InvalidParameter, err)
+	}
+
+	return a.createBizForApplyPermPolicyLibUpdate(cts, bizID, vendor, req)
+}
+
+func (a *applicationSvc) createBizForApplyPermPolicyLibUpdate(cts *rest.Contexts, bizID int64, vendor enumor.Vendor,
+	req *proto.BizApplyPermissionPolicyLibraryUpdateReq) (*core.BatchCreateResult, error) {
+
+	opt := a.getHandlerOption(cts)
+	ids := make([]string, 0, len(req.PermissionTemplateIDs))
+
+	for _, templateID := range req.PermissionTemplateIDs {
+		content := applyupdate.BuildContent(bizID, vendor, req, templateID)
+		handler := applyupdate.NewApplicationOfApplyPermPolicyLibUpdate(opt, content)
+		result, err := a.create(cts, &proto.CreateCommonReq{}, handler)
+		if err != nil {
+			return nil, errf.NewFromErr(errf.Aborted,
+				fmt.Errorf("create application for permission_template %s failed, err: %w", templateID, err))
+		}
+
+		createResult, ok := result.(*core.CreateResult)
+		if !ok {
+			return nil, errf.New(errf.Aborted, "create application result type assertion failed")
+		}
+
+		ids = append(ids, createResult.ID)
+	}
+
+	return &core.BatchCreateResult{IDs: ids}, nil
 }
