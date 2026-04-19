@@ -23,7 +23,9 @@ import (
 	"hcm/pkg/api/core"
 	coresass "hcm/pkg/api/core/cloud/sub-account-secret"
 	"hcm/pkg/criteria/enumor"
+	"hcm/pkg/criteria/errf"
 	"hcm/pkg/criteria/validator"
+	tabletypes "hcm/pkg/dal/table/types"
 	"hcm/pkg/rest"
 	"hcm/pkg/runtime/filter"
 )
@@ -40,9 +42,9 @@ type SubAccountSecretCreate[T coresass.Extension] struct {
 	AccountID      string                        `json:"account_id" validate:"required"`
 	SubAccountID   string                        `json:"sub_account_id" validate:"required"`
 	Status         enumor.SubAccountSecretStatus `json:"status" validate:"required"`
-	CloudCreatedAt string                        `json:"cloud_created_at" validate:"omitempty"`
-	DisabledTime   string                        `json:"disabled_time" validate:"omitempty"`
-	LastUsedTime   string                        `json:"last_used_time" validate:"omitempty"`
+	CloudCreatedAt *string                       `json:"cloud_created_at" validate:"omitempty"`
+	DisabledTime   *string                       `json:"disabled_time" validate:"omitempty"`
+	LastUsedTime   *string                       `json:"last_used_time" validate:"omitempty"`
 	Extension      *T                            `json:"extension" validate:"required"`
 }
 
@@ -131,4 +133,79 @@ type SubAccountSecretExtListResult[T coresass.Extension] struct {
 type SubAccountSecretExtListResp[T coresass.Extension] struct {
 	rest.BaseResp `json:",inline"`
 	Data          *SubAccountSecretExtListResult[T] `json:"data"`
+}
+
+// TCloudSubAccountSecretListExt is the data-service API name for coresass.TCloudSubAccountSecretListExt.
+type TCloudSubAccountSecretListExt = coresass.TCloudSubAccountSecretListExt
+
+// SubAccountSecretFilters defines biz-scoped list filters;
+type SubAccountSecretFilters struct {
+	IDs                []string                        `json:"ids" validate:"omitempty,max=500"`
+	Status             []enumor.SubAccountSecretStatus `json:"status" validate:"omitempty"`
+	AccountIDs         []string                        `json:"account_ids" validate:"omitempty,max=500,dive,lte=64"`
+	SubAccountIDs      []string                        `json:"sub_account_ids" validate:"omitempty,max=500,dive,lte=64"`
+	AccountManagers    []string                        `json:"account_managers" validate:"omitempty,max=500,dive,lte=64"`
+	SubAccountManagers []string                        `json:"sub_account_managers" validate:"omitempty,max=500,dive,lte=64"`
+	Extension          tabletypes.JsonField            `json:"extension,omitempty"`
+}
+
+// Validate validates SubAccountSecretFilters
+func (f *SubAccountSecretFilters) Validate() error {
+	if err := validator.Validate.Struct(f); err != nil {
+		return err
+	}
+
+	for _, status := range f.Status {
+		if err := status.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// SubAccountSecretJoinExtListReq defines sub account secret join-list request for data-service
+// (secret joined with sub_account and account). Vendor must match the path; Extension JsonField is vendor-specific.
+type SubAccountSecretJoinExtListReq struct {
+	BkBizID                 int64 `json:"bk_biz_id" validate:"required"`
+	SubAccountSecretFilters `json:",inline"`
+	Page                    *core.BasePage `json:"page" validate:"required"`
+}
+
+// Validate join list request.
+func (req *SubAccountSecretJoinExtListReq) Validate() error {
+	if err := validator.Validate.Struct(req); err != nil {
+		return err
+	}
+
+	if err := req.SubAccountSecretFilters.Validate(); err != nil {
+		return err
+	}
+
+	if req.Page == nil {
+		return errf.New(errf.InvalidParameter, "page is required")
+	}
+
+	return req.Page.Validate(core.NewDefaultPageOption())
+}
+
+// SubAccountSecretJoinExtDetail is one row in join+ext list response (tcloud detail shape).
+type SubAccountSecretJoinExtDetail struct {
+	coresass.BaseSubAccountSecret `json:",inline"`
+	Extension                     *coresass.TCloudSubAccountSecretJoinExtension `json:"extension"`
+	AccountManagers               []string                                      `json:"account_managers"`
+	AccountName                   string                                        `json:"account_name"`
+	SubAccountManagers            []string                                      `json:"sub_account_managers"`
+	SubAccountName                string                                        `json:"sub_account_name"`
+}
+
+// SubAccountSecretJoinExtListResult defines join list response.
+type SubAccountSecretJoinExtListResult struct {
+	Count   uint64                          `json:"count"`
+	Details []SubAccountSecretJoinExtDetail `json:"details"`
+}
+
+// SubAccountSecretJoinListResp defines list join HTTP response.
+type SubAccountSecretJoinListResp struct {
+	rest.BaseResp `json:",inline"`
+	Data          *SubAccountSecretJoinExtListResult `json:"data"`
 }

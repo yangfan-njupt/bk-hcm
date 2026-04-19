@@ -32,9 +32,9 @@ type BaseSubAccountSecret struct {
 	Status         enumor.SubAccountSecretStatus `json:"status"`
 	AccountID      string                        `json:"account_id"`
 	SubAccountID   string                        `json:"sub_account_id"`
-	CloudCreatedAt string                        `json:"cloud_created_at"`
-	DisabledTime   string                        `json:"disabled_time"`
-	LastUsedTime   string                        `json:"last_used_time"`
+	CloudCreatedAt *string                       `json:"cloud_created_at"`
+	DisabledTime   *string                       `json:"disabled_time"`
+	LastUsedTime   *string                       `json:"last_used_time"`
 	*core.Revision `json:",inline"`
 }
 
@@ -52,4 +52,13 @@ func (a SubAccountSecret[T]) GetID() string {
 // Extension 子账号密钥扩展字段接口
 type Extension interface {
 	TCloudSubAccountSecretExtension
+}
+
+// TCloudSubAccountSecretListExt defines Tencent Cloud-only filter fields for biz-scoped sub account secret
+// join list. Used in data-service request extension JSON and in DAO join filter options (same shape).
+type TCloudSubAccountSecretListExt struct {
+	CloudSecretIDs      []string                       `json:"cloud_secret_ids" validate:"omitempty,max=500,dive,lte=255"`
+	CloudMainAccountIDs []string                       `json:"cloud_main_account_ids" validate:"omitempty,max=500,dive,lte=255"`
+	CloudSubAccountIDs  []string                       `json:"cloud_sub_account_ids" validate:"omitempty,max=500,dive,lte=255"`
+	ConsoleLogin        *enumor.SubAccountConsoleLogin `json:"console_login,omitempty" validate:"omitempty,min=0,max=1"`
 }
