@@ -27,9 +27,9 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	authsvc "hcm/cmd/web-server/service/auth"
@@ -318,7 +318,32 @@ func (s *Service) staticFileSet() *restful.WebService {
 }
 
 func (s *Service) staticFileHandleFunc(req *restful.Request, resp *restful.Response) {
-	actual := path.Join(cc.WebServer().Web.StaticFileDirPath, req.PathParameter("subpath"))
+	// 获取用户输入的子路径并清理
+	subpath := req.PathParameter("subpath")
+
+	// 拼接完整路径
+	actual := filepath.Join(cc.WebServer().Web.StaticFileDirPath, subpath)
+
+	// 获取绝对路径并解析符号链接
+	actual, err := filepath.Abs(actual)
+	if err != nil {
+		resp.WriteErrorString(http.StatusBadRequest, "invalid path")
+		return
+	}
+
+	// 获取静态文件目录的绝对路径
+	baseDir, err := filepath.Abs(cc.WebServer().Web.StaticFileDirPath)
+	if err != nil {
+		resp.WriteErrorString(http.StatusInternalServerError, "invalid config staticFileDirPath")
+		return
+	}
+
+	// 安全检查：确保最终路径在允许的目录范围内
+	if !strings.HasPrefix(actual, baseDir+string(filepath.Separator)) {
+		resp.WriteErrorString(http.StatusForbidden, "access denied")
+		return
+	}
+
 	http.ServeFile(resp.ResponseWriter, req.Request, actual)
 }
 
