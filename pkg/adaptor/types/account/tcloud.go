@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"strconv"
 
+	coresubaccount "hcm/pkg/api/core/cloud/sub-account"
 	"hcm/pkg/criteria/enumor"
 	"hcm/pkg/criteria/validator"
 	"hcm/pkg/tools/converter"
@@ -66,6 +67,17 @@ type TCloudAccount struct {
 // GetCloudID ...
 func (account TCloudAccount) GetCloudID() string {
 	return strconv.FormatUint(converter.PtrToVal(account.Uin), 10)
+}
+
+// TCloudAccountWithExt 腾讯云子账号完整信息（包含基础信息和扩展信息）
+type TCloudAccountWithExt struct {
+	TCloudAccount `json:",inline"`
+	Extension     *coresubaccount.TCloudExtension `json:"extension"`
+}
+
+// GetCloudID 实现 CloudResType 接口，用于 Diff 对比
+func (a TCloudAccountWithExt) GetCloudID() string {
+	return a.TCloudAccount.GetCloudID()
 }
 
 // AddUserOption define tcloud add user option.
@@ -127,11 +139,32 @@ func (opt TCloudListPolicyOption) Validate() error {
 	return validator.Validate.Struct(opt)
 }
 
-// DescribeSafeAuthFlagOption define tcloud describe sub-account safe auth flag option.
+// DescribeSafeAuthFlagCollMaxUIN is the max number of UINs per DescribeSafeAuthFlagColl API call.
+const DescribeSafeAuthFlagCollMaxUIN = 10
+
+// DescribeSafeAuthFlagCollOption define tcloud describe sub-account safe auth flag option.
 // reference: https://cloud.tencent.com/document/product/598/48602
+type DescribeSafeAuthFlagCollOption struct {
+	// SubUins is the sub-account UIN list.
+	SubUins []uint64 `json:"sub_uins" validate:"required,min=1,max=10"`
+}
+
+// Validate DescribeSafeAuthFlagCollOption.
+func (opt DescribeSafeAuthFlagCollOption) Validate() error {
+	if err := validator.Validate.Struct(opt); err != nil {
+		return err
+	}
+	if len(opt.SubUins) > DescribeSafeAuthFlagCollMaxUIN {
+		return fmt.Errorf("sub_uin count %d exceeds max %d", len(opt.SubUins), DescribeSafeAuthFlagCollMaxUIN)
+	}
+	return nil
+}
+
+// DescribeSafeAuthFlagOption define tcloud describe user's safe auth flag option.
+// reference: https://cloud.tencent.com/document/product/598/48426
 type DescribeSafeAuthFlagOption struct {
-	// SubUin is the sub-account UIN.
-	SubUin uint64 `json:"sub_uin" validate:"required"`
+	// Uin is the main account UIN, optional. If not provided, queries current user.
+	Uin *uint64 `json:"uin,omitempty" validate:"omitempty"`
 }
 
 // Validate DescribeSafeAuthFlagOption.
@@ -159,29 +192,30 @@ type LoginActionFlag struct {
 
 // ToProtectionFlag maps enabled fields (value == 1) to AccountProtectionFlag using priority:
 // Phone > Token > Stoken > Wechat > Custom > Mail > U2FToken. Returns nil if flag is nil or none enabled.
-func (flag LoginActionFlag) ToProtectionFlag() enumor.AccountProtectionFlag {
+func (flag LoginActionFlag) ToProtectionFlag() *enumor.AccountProtectionFlag {
 	if flag.Phone != nil && converter.PtrToVal(flag.Phone) == 1 {
-		return enumor.PhoneProtection
+		return converter.ValToPtr(enumor.PhoneProtection)
 	}
 	if flag.Token != nil && converter.PtrToVal(flag.Token) == 1 {
-		return enumor.TokenProtection
+		return converter.ValToPtr(enumor.TokenProtection)
 	}
 	if flag.Stoken != nil && converter.PtrToVal(flag.Stoken) == 1 {
-		return enumor.StokenProtection
+		return converter.ValToPtr(enumor.StokenProtection)
 	}
 	if flag.Wechat != nil && converter.PtrToVal(flag.Wechat) == 1 {
-		return enumor.WechatProtection
+		return converter.ValToPtr(enumor.WechatProtection)
 	}
 	if flag.Custom != nil && converter.PtrToVal(flag.Custom) == 1 {
-		return enumor.CustomProtection
+		return converter.ValToPtr(enumor.CustomProtection)
 	}
 	if flag.Mail != nil && converter.PtrToVal(flag.Mail) == 1 {
-		return enumor.MailProtection
+		return converter.ValToPtr(enumor.MailProtection)
 	}
 	if flag.U2FToken != nil && converter.PtrToVal(flag.U2FToken) == 1 {
-		return enumor.U2FTokenProtection
+		return converter.ValToPtr(enumor.U2FTokenProtection)
 	}
-	return ""
+
+	return nil
 }
 
 // OffsiteFlag define offsite login protection settings.
@@ -253,7 +287,21 @@ type TCloudSubAccountUser struct {
 	LastLoginTime *string `json:"last_login_time"`
 }
 
-// SafeAuthFlagResult define tcloud DescribeSafeAuthFlagColl API result.
+// SafeAuthFlagCollResult define tcloud DescribeSafeAuthFlagColl API result item.
+type SafeAuthFlagCollResult struct {
+	// SubUin is the sub-account UIN.
+	SubUin uint64 `json:"sub_uin"`
+	// LoginFlag is the login protection settings.
+	LoginFlag *LoginActionFlag `json:"login_flag"`
+	// ActionFlag is the sensitive operation protection settings.
+	ActionFlag *LoginActionFlag `json:"action_flag"`
+	// OffsiteFlag is the offsite login protection settings.
+	OffsiteFlag *OffsiteFlag `json:"offsite_flag"`
+	// PromptTrust indicates whether to prompt the user to trust the device (1: prompt, 0: no prompt).
+	PromptTrust *int64 `json:"prompt_trust"`
+}
+
+// SafeAuthFlagResult define tcloud DescribeSafeAuthFlag API result.
 type SafeAuthFlagResult struct {
 	// LoginFlag is the login protection settings.
 	LoginFlag *LoginActionFlag `json:"login_flag"`
@@ -357,4 +405,21 @@ type SecretIdLastUsed struct {
 	SecretId           string  `json:"secret_id"`
 	LastUsedDate       *string `json:"last_used_date"`
 	LastSecretUsedDate *uint64 `json:"last_secret_used_date"`
+}
+
+// TCloudSubAccountSecret holds cloud access key data enriched with sub-account context for DB operations.
+type TCloudSubAccountSecret struct {
+	AccountID          string  `json:"account_id"`
+	SubAccountID       string  `json:"sub_account_id"`
+	CloudMainAccountID string  `json:"cloud_main_account_id"`
+	CloudSubAccountID  string  `json:"cloud_sub_account_id"`
+	AccessKeyID        string  `json:"access_key_id"`
+	Status             string  `json:"status"`
+	CreateTime         string  `json:"create_time"`
+	LastUsedTime       *string `json:"last_used_time"`
+}
+
+// GetCloudID returns the cloud-side unique identifier for the secret (AccessKeyID).
+func (s TCloudSubAccountSecret) GetCloudID() string {
+	return s.AccessKeyID
 }

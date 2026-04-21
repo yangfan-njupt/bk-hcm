@@ -364,8 +364,85 @@ func (t *TCloudImpl) UpdateUser(kt *kit.Kit, opt *typeaccount.UpdateUserOption) 
 	return nil
 }
 
-// DescribeSafeAuthFlag get sub-account safe auth flag settings.
+// DescribeSafeAuthFlagColl get sub-account safe auth flag settings (CAM DescribeSafeAuthFlagColl).
 // reference: https://cloud.tencent.com/document/product/598/48602
+func (t *TCloudImpl) DescribeSafeAuthFlagColl(kt *kit.Kit, opt *typeaccount.DescribeSafeAuthFlagCollOption) (
+	[]typeaccount.SafeAuthFlagCollResult, error) {
+
+	if opt == nil {
+		return nil, errf.New(errf.InvalidParameter, "describe safe auth flag coll option is required")
+	}
+
+	if err := opt.Validate(); err != nil {
+		return nil, err
+	}
+
+	camClient, err := t.clientSet.CamServiceClient("")
+	if err != nil {
+		return nil, fmt.Errorf("new cam client failed, err: %v", err)
+	}
+
+	results := make([]typeaccount.SafeAuthFlagCollResult, 0, len(opt.SubUins))
+
+	// CAM DescribeSafeAuthFlagColl API only supports querying one SubUins at a time internally
+	// Iterate through all SubUins and make individual API calls
+	for _, subUin := range opt.SubUins {
+		req := cam.NewDescribeSafeAuthFlagCollRequest()
+		req.SubUin = converter.ValToPtr(subUin)
+
+		resp, err := camClient.DescribeSafeAuthFlagCollWithContext(kt.Ctx, req)
+		if err != nil {
+			logs.Errorf("describe safe auth flag coll failed, sub_uin: %d, err: %v, rid: %s", subUin, err, kt.Rid)
+			return nil, fmt.Errorf("describe safe auth flag coll failed for sub_uin %d, err: %v", subUin, err)
+		}
+
+		result := typeaccount.SafeAuthFlagCollResult{
+			SubUin:      subUin,
+			PromptTrust: resp.Response.PromptTrust,
+		}
+
+		if resp.Response.LoginFlag != nil {
+			result.LoginFlag = &typeaccount.LoginActionFlag{
+				Phone:    resp.Response.LoginFlag.Phone,
+				Token:    resp.Response.LoginFlag.Token,
+				Stoken:   resp.Response.LoginFlag.Stoken,
+				Wechat:   resp.Response.LoginFlag.Wechat,
+				Custom:   resp.Response.LoginFlag.Custom,
+				Mail:     resp.Response.LoginFlag.Mail,
+				U2FToken: resp.Response.LoginFlag.U2FToken,
+			}
+		}
+
+		if resp.Response.ActionFlag != nil {
+			result.ActionFlag = &typeaccount.LoginActionFlag{
+				Phone:    resp.Response.ActionFlag.Phone,
+				Token:    resp.Response.ActionFlag.Token,
+				Stoken:   resp.Response.ActionFlag.Stoken,
+				Wechat:   resp.Response.ActionFlag.Wechat,
+				Custom:   resp.Response.ActionFlag.Custom,
+				Mail:     resp.Response.ActionFlag.Mail,
+				U2FToken: resp.Response.ActionFlag.U2FToken,
+			}
+		}
+
+		if resp.Response.OffsiteFlag != nil {
+			result.OffsiteFlag = &typeaccount.OffsiteFlag{
+				VerifyFlag:   resp.Response.OffsiteFlag.VerifyFlag,
+				NotifyPhone:  resp.Response.OffsiteFlag.NotifyPhone,
+				NotifyEmail:  resp.Response.OffsiteFlag.NotifyEmail,
+				NotifyWechat: resp.Response.OffsiteFlag.NotifyWechat,
+				Tips:         resp.Response.OffsiteFlag.Tips,
+			}
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// DescribeSafeAuthFlag get user's safe auth flag settings (CAM DescribeSafeAuthFlag).
+// reference: https://cloud.tencent.com/document/product/598/48426
 func (t *TCloudImpl) DescribeSafeAuthFlag(kt *kit.Kit, opt *typeaccount.DescribeSafeAuthFlagOption) (
 	*typeaccount.SafeAuthFlagResult, error) {
 
@@ -382,17 +459,18 @@ func (t *TCloudImpl) DescribeSafeAuthFlag(kt *kit.Kit, opt *typeaccount.Describe
 		return nil, fmt.Errorf("new cam client failed, err: %v", err)
 	}
 
-	req := cam.NewDescribeSafeAuthFlagCollRequest()
-	req.SubUin = converter.ValToPtr(opt.SubUin)
+	req := cam.NewDescribeSafeAuthFlagRequest()
 
-	resp, err := camClient.DescribeSafeAuthFlagCollWithContext(kt.Ctx, req)
+	resp, err := camClient.DescribeSafeAuthFlagWithContext(kt.Ctx, req)
 	if err != nil {
-		logs.Errorf("describe safe auth flag failed, sub_uin: %d, err: %v, rid: %s", opt.SubUin, err, kt.Rid)
+		logs.Errorf("describe safe auth flag failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, fmt.Errorf("describe safe auth flag failed, err: %v", err)
 	}
 
-	result := &typeaccount.SafeAuthFlagResult{
-		PromptTrust: resp.Response.PromptTrust,
+	result := &typeaccount.SafeAuthFlagResult{}
+	if resp.Response.PromptTrust != nil {
+		promptTrust := int64(*resp.Response.PromptTrust)
+		result.PromptTrust = &promptTrust
 	}
 
 	if resp.Response.LoginFlag != nil {

@@ -117,6 +117,8 @@ func SyncAllResource(kt *kit.Kit, cliSet *client.ClientSet,
 
 func getSyncOrder() []enumor.CloudResourceType {
 	return []enumor.CloudResourceType{
+		// 支持用户在海垒只管理账号信息，防止用户只开了云账号的云上API，全流程没同步完影响到了账号的同步
+		enumor.SubAccountCloudResType,
 		enumor.DiskCloudResType,
 		enumor.VpcCloudResType,
 		enumor.SubnetCloudResType,
@@ -127,7 +129,6 @@ func getSyncOrder() []enumor.CloudResourceType {
 		enumor.CertCloudResType,
 		enumor.LoadBalancerCloudResType,
 		enumor.RouteTableCloudResType,
-		enumor.SubAccountCloudResType,
 		enumor.SecurityGroupUsageBizRelResType,
 		enumor.CvmCCInfoResType,
 	}

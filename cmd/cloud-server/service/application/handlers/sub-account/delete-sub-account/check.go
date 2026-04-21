@@ -43,6 +43,7 @@ func (a *ApplicationOfDeleteSubAccount) CheckReq() error {
 			a.req.AccountID, account.BkBizID, a.BkBizID())
 	}
 
+	// 校验三级账号关联的密钥是否已全部删除
 	if err := a.CheckSubSecretExists(a.req.ID); err != nil {
 		return err
 	}

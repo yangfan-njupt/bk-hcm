@@ -227,12 +227,28 @@ func (a *AccountClient) DeleteSubAccount(kt *kit.Kit, req *hssubaccount.TCloudDe
 		a.client, http.MethodPost, kt, req, "/sub_accounts/delete")
 }
 
-// DescribeSafeAuthFlag get subaccount safe auth flag settings via TCloud CAM DescribeSafeAuthFlagColl.
+// DescribeSafeAuthFlagColl get subaccount safe auth flag settings via TCloud CAM DescribeSafeAuthFlagColl.
+func (a *AccountClient) DescribeSafeAuthFlagColl(kt *kit.Kit, req *hssubaccount.TCloudDescribeSafeAuthFlagCollReq,
+) ([]hssubaccount.TCloudDescribeSafeAuthFlagCollResult, error) {
+
+	resp, err := common.Request[hssubaccount.TCloudDescribeSafeAuthFlagCollReq,
+		[]hssubaccount.TCloudDescribeSafeAuthFlagCollResult](
+		a.client, http.MethodPost, kt, req, "/sub_accounts/safe_auth_flag")
+	if err != nil {
+		return nil, err
+	}
+
+	return *resp, nil
+}
+
+// DescribeSafeAuthFlag get account safe auth flag settings via TCloud CAM DescribeSafeAuthFlag.
 func (a *AccountClient) DescribeSafeAuthFlag(kt *kit.Kit, req *hssubaccount.TCloudDescribeSafeAuthFlagReq,
 ) (*hssubaccount.TCloudDescribeSafeAuthFlagResult, error) {
 
-	return common.Request[hssubaccount.TCloudDescribeSafeAuthFlagReq, hssubaccount.TCloudDescribeSafeAuthFlagResult](
-		a.client, http.MethodPost, kt, req, "/sub_accounts/safe_auth_flag")
+	return common.Request[hssubaccount.TCloudDescribeSafeAuthFlagReq,
+		hssubaccount.TCloudDescribeSafeAuthFlagResult](
+		a.client, http.MethodPost, kt, req, "/accounts/safe_auth_flag")
+
 }
 
 // SetMfaFlag set subaccount login protection and sensitive operation protection via TCloud CAM SetMfaFlag.
@@ -241,7 +257,7 @@ func (a *AccountClient) SetMfaFlag(kt *kit.Kit, req *hssubaccount.TCloudSetMfaFl
 		a.client, http.MethodPost, kt, req, "/sub_accounts/set_mfa_flag")
 }
 
-// DescribeSubAccounts query sub accounts by UIN list via TCloud CAM DescribeSubAccounts.
+// DescribeSubAccounts query subaccounts by UIN list via TCloud CAM DescribeSubAccounts.
 func (a *AccountClient) DescribeSubAccounts(kt *kit.Kit, req *hssubaccount.TCloudDescribeSubAccountsReq,
 ) ([]typeaccount.TCloudSubAccountUser, error) {
 
@@ -254,8 +270,8 @@ func (a *AccountClient) DescribeSubAccounts(kt *kit.Kit, req *hssubaccount.TClou
 }
 
 // CreateAccessKey create access key for TCloud CAM sub-user.
-func (a *AccountClient) CreateAccessKey(kt *kit.Kit,
-	req *hssubaccount.TCloudCreateAccessKeyReq) (*hssubaccount.TCloudCreateAccessKeyResult, error) {
+func (a *AccountClient) CreateAccessKey(kt *kit.Kit, req *hssubaccount.TCloudCreateAccessKeyReq,
+) (*hssubaccount.TCloudCreateAccessKeyResult, error) {
 
 	return common.Request[hssubaccount.TCloudCreateAccessKeyReq, hssubaccount.TCloudCreateAccessKeyResult](
 		a.client, http.MethodPost, kt, req, "/sub_accounts/secrets/create")

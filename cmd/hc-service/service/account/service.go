@@ -77,6 +77,17 @@ func InitAccountService(cap *capability.Capability) {
 	h.Add("GetTCloudNetworkAccountType", http.MethodGet, "/vendors/tcloud/accounts/{account_id}/network_type",
 		svc.GetTCloudNetworkAccountType)
 
+	tcloudAccountService(h, svc)
+	// 访问密钥管理
+	tcloudSecretService(h, svc)
+
+	initAccountServiceHooks(svc, h)
+
+	h.Load(cap.WebService)
+}
+
+// 腾讯云密钥管理
+func tcloudAccountService(h *rest.Handler, svc *service) {
 	// 查询账号列表
 	h.Add("TCloudListAccount", http.MethodPost,
 		"/vendors/tcloud/sub_accounts/list", svc.TCloudListAccount)
@@ -92,23 +103,19 @@ func InitAccountService(cap *capability.Capability) {
 	// 通过子用户UIN列表查询子用户
 	h.Add("TCloudDescribeSubAccounts", http.MethodPost,
 		"/vendors/tcloud/sub_accounts/describe", svc.TCloudDescribeSubAccounts)
-	// 获取子账号安全设置
+	// 获取子账号安全设置 (CAM DescribeSafeAuthFlagColl)
+	h.Add("TCloudDescribeSafeAuthFlagColl", http.MethodPost,
+		"/vendors/tcloud/sub_accounts/safe_auth_flag", svc.TCloudDescribeSafeAuthFlagColl)
+	// 获取用户账号安全设置 (CAM DescribeSafeAuthFlag)
 	h.Add("TCloudDescribeSafeAuthFlag", http.MethodPost,
-		"/vendors/tcloud/sub_accounts/safe_auth_flag", svc.TCloudDescribeSafeAuthFlag)
+		"/vendors/tcloud/accounts/safe_auth_flag", svc.TCloudDescribeSafeAuthFlag)
 	// 设置子账号登录保护和敏感操作保护
 	h.Add("TCloudSetMfaFlag", http.MethodPost,
 		"/vendors/tcloud/sub_accounts/set_mfa_flag", svc.TCloudSetMfaFlag)
-
-	// 访问密钥管理
-	secretService(h, svc)
-
-	initAccountServiceHooks(svc, h)
-
-	h.Load(cap.WebService)
 }
 
 // 密钥管理
-func secretService(h *rest.Handler, svc *service) {
+func tcloudSecretService(h *rest.Handler, svc *service) {
 	// TCloud 密钥管理
 	h.Add("TCloudCreateAccessKey", http.MethodPost,
 		"/vendors/tcloud/sub_accounts/secrets/create", svc.TCloudCreateAccessKey)

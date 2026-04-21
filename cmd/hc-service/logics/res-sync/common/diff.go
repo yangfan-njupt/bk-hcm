@@ -50,6 +50,7 @@ import (
 	coreresourcegroup "hcm/pkg/api/core/cloud/resource-group"
 	cloudcoreroutetable "hcm/pkg/api/core/cloud/route-table"
 	coresubaccount "hcm/pkg/api/core/cloud/sub-account"
+	coresass "hcm/pkg/api/core/cloud/sub-account-secret"
 	corezone "hcm/pkg/api/core/cloud/zone"
 	corerecyclerecord "hcm/pkg/api/core/recycle-record"
 	dataeip "hcm/pkg/api/data-service/cloud/eip"
@@ -140,10 +141,12 @@ type CloudResType interface {
 		typesroutetable.AwsRoute |
 
 		account.TCloudAccount |
+		account.TCloudAccountWithExt |
 		account.HuaWeiAccount |
 		account.AwsAccount |
 		account.AzureAccount |
 		account.GcpAccount |
+		account.TCloudSubAccountSecret |
 
 		corerecyclerecord.EipBindInfo |
 		corerecyclerecord.DiskAttachInfo |
@@ -253,6 +256,8 @@ type DBResType interface {
 		coresubaccount.SubAccount[coresubaccount.AwsExtension] |
 		coresubaccount.SubAccount[coresubaccount.AzureExtension] |
 		coresubaccount.SubAccount[coresubaccount.GcpExtension] |
+
+		coresass.SubAccountSecret[coresass.TCloudSubAccountSecretExtension] |
 
 		corerecyclerecord.EipBindInfo |
 		corerecyclerecord.DiskAttachInfo |
