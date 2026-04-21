@@ -17,35 +17,20 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-// Package permissiontemplate provides hc-service handlers for permission template cloud operations.
-package permissiontemplate
+package validator
 
 import (
-	"net/http"
-
-	cloudadaptor "hcm/cmd/hc-service/logics/cloud-adaptor"
-	"hcm/cmd/hc-service/service/capability"
-	"hcm/pkg/rest"
+	"fmt"
+	"regexp"
 )
 
-// InitService initialize the permission template service.
-func InitService(cap *capability.Capability) {
-	svc := &service{
-		ad: cap.CloudAdaptor,
+// nameRegexp 权限模版命名正则表达式，只能包含英文字母、数字和-_
+var nameRegexp = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+
+// ValidatePermTmplName 验证权限模板名称
+func ValidatePermTmplName(name string) error {
+	if !nameRegexp.MatchString(name) {
+		return fmt.Errorf("invalid name: %s, only allows english letters, numbers, underscore (_) and hyphen (-)", name)
 	}
-
-	h := rest.NewHandler()
-
-	h.Add("TCloudCreateCAMPolicy", http.MethodPost,
-		"/vendors/tcloud/permission_templates/cam/create_policy", svc.TCloudCreateCAMPolicy)
-	h.Add("TCloudUpdateCAMPolicy", http.MethodPatch,
-		"/vendors/tcloud/permission_templates/cam/update_policy", svc.TCloudUpdateCAMPolicy)
-	h.Add("TCloudDeleteCAMPolicy", http.MethodDelete,
-		"/vendors/tcloud/permission_templates/cam/delete_policy", svc.TCloudDeleteCAMPolicy)
-
-	h.Load(cap.WebService)
-}
-
-type service struct {
-	ad *cloudadaptor.CloudAdaptorClient
+	return nil
 }
