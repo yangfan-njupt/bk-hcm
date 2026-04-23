@@ -21,12 +21,16 @@ package updatesubaccount
 
 import (
 	"fmt"
+	"strconv"
 
+	"hcm/pkg/api/core"
 	dssubaccount "hcm/pkg/api/data-service/cloud/sub-account"
 	hssubaccount "hcm/pkg/api/hc-service/sub-account"
 	"hcm/pkg/criteria/enumor"
+	"hcm/pkg/dal/dao/tools"
 	"hcm/pkg/logs"
 	"hcm/pkg/tools/converter"
+	"hcm/pkg/tools/slice"
 )
 
 // Deliver execute resource delivery after approval.
@@ -45,6 +49,14 @@ func (a *ApplicationOfUpdateSubAccount) deliverForTCloud() (enumor.ApplicationSt
 	if err := a.updateCloudSubAccount(); err != nil {
 		return enumor.DeliverError,
 			map[string]interface{}{"error": fmt.Sprintf("update cloud sub account failed, err: %v", err)}, err
+	}
+
+	if err := a.updatePermissionTemplateOnCloud(); err != nil {
+		logs.Errorf("update permission template on cloud failed, sub_account_id: %s, err: %v, rid: %s",
+			a.req.ID, err, a.Cts.Kit.Rid)
+		return enumor.DeliverError, map[string]interface{}{
+			"error":          fmt.Sprintf("update permission template on cloud failed, err: %v", err),
+			"sub_account_id": a.req.ID}, err
 	}
 
 	if err := a.updateLocalSubAccount(); err != nil {
@@ -74,6 +86,54 @@ func (a *ApplicationOfUpdateSubAccount) updateCloudSubAccount() error {
 	return a.Client.HCService().TCloud.Account.UpdateSubAccount(a.Cts.Kit, req)
 }
 
+func (a *ApplicationOfUpdateSubAccount) updatePermissionTemplateOnCloud() error {
+	if a.req.PermissionTemplateIDs == nil {
+		return nil
+	}
+
+	subAccounts, err := a.Client.DataService().Global.SubAccount.List(
+		a.Cts.Kit,
+		&core.ListReq{
+			Filter: tools.ExpressionAnd(tools.RuleEqual("id", a.req.ID)),
+			Page:   core.NewDefaultBasePage(),
+		},
+	)
+	if err != nil {
+		logs.Errorf("get sub account failed, id: %s, err: %v, rid: %s", a.req.ID, err, a.Cts.Kit.Rid)
+		return fmt.Errorf("get sub account failed, id: %s, err: %v", a.req.ID, err)
+	}
+	if len(subAccounts.Details) == 0 {
+		logs.Errorf("sub account not found, id: %s, rid: %s", a.req.ID, a.Cts.Kit.Rid)
+		return fmt.Errorf("sub account not found, id: %s", a.req.ID)
+	}
+
+	subAccount := subAccounts.Details[0]
+	uin, parseErr := strconv.ParseUint(subAccount.CloudID, 10, 64)
+	if parseErr != nil {
+		logs.Errorf("parse sub account cloud_id to uin failed, cloud_id: %s, err: %v, rid: %s",
+			subAccount.CloudID, parseErr, a.Cts.Kit.Rid)
+		return fmt.Errorf("parse sub account cloud_id to uin failed, cloud_id: %s, err: %w",
+			subAccount.CloudID, parseErr)
+	}
+
+	toAttach := slice.NotIn(subAccount.PermissionTemplateIDs, a.req.PermissionTemplateIDs)
+	toDetach := slice.NotIn(a.req.PermissionTemplateIDs, subAccount.PermissionTemplateIDs)
+
+	if len(toAttach) > 0 {
+		if err = a.AttachPolicies(uin, toAttach); err != nil {
+			return err
+		}
+	}
+
+	if len(toDetach) > 0 {
+		if err = a.DetachPolicies(uin, toDetach); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (a *ApplicationOfUpdateSubAccount) updateLocalSubAccount() error {
 	field := dssubaccount.UpdateField{ID: a.req.ID}
 
@@ -96,19 +156,26 @@ func (a *ApplicationOfUpdateSubAccount) updateLocalSubAccount() error {
 		field.BkBizIDs = []int64{converter.PtrToVal(a.req.BkBizID)}
 	}
 
+	if len(a.req.PermissionTemplateIDs) > 0 {
+		field.PermissionTemplateIDs = a.req.PermissionTemplateIDs
+	}
+
+	if err := a.Client.DataService().Global.SubAccount.BatchUpdate(a.Cts.Kit,
+		&dssubaccount.UpdateReq{Items: []dssubaccount.UpdateField{field}}); err != nil {
+		logs.Errorf("update sub account failed, err: %v, rid: %s", err, a.Cts.Kit.Rid)
+		return err
+	}
+
 	updateFields, err := converter.StructToMap(field)
 	if err != nil {
 		logs.Errorf("convert update_sub_account field to map failed, err: %v, rid: %s", err, a.Cts.Kit.Rid)
 		return err
 	}
-	err = a.Audit.ResUpdateAudit(a.Cts.Kit, enumor.SubAccountAuditResType, a.req.ID, updateFields)
+	err = a.CreateAudit(enumor.Update, enumor.SubAccountAuditResType, a.req.ID, a.subAccountName, updateFields)
 	if err != nil {
 		logs.Errorf("create update_sub_account audit failed, err: %v, rid: %s", err, a.Cts.Kit.Rid)
 		return err
 	}
 
-	return a.Client.DataService().Global.SubAccount.BatchUpdate(
-		a.Cts.Kit,
-		&dssubaccount.UpdateReq{Items: []dssubaccount.UpdateField{field}},
-	)
+	return nil
 }

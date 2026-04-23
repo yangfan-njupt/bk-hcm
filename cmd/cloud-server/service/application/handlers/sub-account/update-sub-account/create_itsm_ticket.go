@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"strings"
 
+	"hcm/pkg/logs"
 	"hcm/pkg/tools/converter"
 )
 
@@ -59,6 +60,20 @@ func (a *ApplicationOfUpdateSubAccount) RenderItsmForm() (string, error) {
 	}
 	if a.req.Memo != nil {
 		items = append(items, fmt.Sprintf("修改备注: %s", converter.PtrToVal(a.req.Memo)))
+	}
+
+	if a.req.PermissionTemplateIDs != nil {
+		if len(a.req.PermissionTemplateIDs) == 0 {
+			logs.Errorf("permission template ids is empty,rid:%s", a.Cts.Kit.Rid)
+			return "", fmt.Errorf("permission template ids is empty")
+		}
+
+		names, err := a.QueryPermissionTemplateNames(a.req.PermissionTemplateIDs)
+		if err != nil {
+			return "", fmt.Errorf("query permission template names failed, err: %v", err)
+		}
+
+		items = append(items, fmt.Sprintf("修改权限模版为: %s", strings.Join(names, ",")))
 	}
 
 	return strings.Join(items, "\n"), nil

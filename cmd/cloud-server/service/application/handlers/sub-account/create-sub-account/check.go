@@ -26,7 +26,8 @@ import (
 	proto "hcm/pkg/api/cloud-server/application"
 	"hcm/pkg/api/core"
 	"hcm/pkg/criteria/enumor"
-	"hcm/pkg/runtime/filter"
+	"hcm/pkg/dal/dao/tools"
+	"hcm/pkg/tools/converter"
 )
 
 // CheckReq validate the request and check business rules.
@@ -50,6 +51,10 @@ func (a *ApplicationOfCreateSubAccount) CheckReq() error {
 	}
 
 	if err := a.checkDuplicateName(); err != nil {
+		return err
+	}
+
+	if err := a.checkPermissionTemplate(); err != nil {
 		return err
 	}
 
@@ -83,14 +88,10 @@ func decodeTCloudExtension(a *ApplicationOfCreateSubAccount) (*proto.TCloudSubAc
 func (a *ApplicationOfCreateSubAccount) checkDuplicateName() error {
 	result, err := a.Client.DataService().Global.SubAccount.List(
 		a.Cts.Kit, &core.ListReq{
-			Filter: &filter.Expression{
-				Op: filter.And,
-				Rules: []filter.RuleFactory{
-					filter.AtomRule{Field: "account_id", Op: filter.Equal.Factory(), Value: a.req.AccountID},
-					filter.AtomRule{Field: "name", Op: filter.Equal.Factory(), Value: a.req.Name},
-				},
-			},
-			Page: &core.BasePage{Count: true},
+			Filter: tools.ExpressionAnd(
+				tools.RuleEqual("account_id", a.req.AccountID),
+				tools.RuleEqual("name", a.req.Name)),
+			Page: core.NewCountPage(),
 		},
 	)
 	if err != nil {
@@ -99,6 +100,34 @@ func (a *ApplicationOfCreateSubAccount) checkDuplicateName() error {
 
 	if result.Count > 0 {
 		return fmt.Errorf("sub account name [%s] already exists under account [%s]", a.req.Name, a.req.AccountID)
+	}
+
+	return nil
+}
+
+func (a *ApplicationOfCreateSubAccount) checkPermissionTemplate() error {
+	// 创建函数不允许为空
+	if len(a.req.PermissionTemplateIDs) == 0 {
+		return fmt.Errorf("permission template ids is empty")
+	}
+
+	details, err := a.ListPermissionTemplate(a.req.PermissionTemplateIDs)
+	if err != nil {
+		return fmt.Errorf("list permission templates failed, err: %w", err)
+	}
+
+	if len(details) != len(a.req.PermissionTemplateIDs) {
+		return fmt.Errorf("permission templates count mismatch, expected %d, got %d",
+			len(a.req.PermissionTemplateIDs), len(details))
+	}
+
+	for _, tmpl := range details {
+		if converter.PtrToVal(tmpl.PolicyLibraryID) == "" {
+			return fmt.Errorf("permission template(id=%s) has empty policy_library_id", tmpl.ID)
+		}
+		if tmpl.AccountID != a.AccountID() {
+			return fmt.Errorf("permission template(id=%s) account_id does not match", tmpl.ID)
+		}
 	}
 
 	return nil
