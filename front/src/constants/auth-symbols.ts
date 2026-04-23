@@ -90,3 +90,20 @@ export const AUTH_BIZ_APPLY_PERMISSION_POLICY_LIBRARY = Symbol.for('auth_biz_app
 export const AUTH_CREATE_PERMISSION_TEMPLATE = Symbol.for('auth_create_permission_template');
 export const AUTH_UPDATE_PERMISSION_TEMPLATE = Symbol.for('auth_update_permission_template');
 export const AUTH_DELETE_PERMISSION_TEMPLATE = Symbol.for('auth_delete_permission_template');
+
+/**
+ * 云密钥
+ */
+export const AUTH_BIZ_CREATE_SUB_ACCOUNT_SECRET = Symbol.for('auth_biz_create_sub_account_secret');
+export const AUTH_BIZ_UPDATE_SUB_ACCOUNT_SECRET = Symbol.for('auth_biz_update_sub_account_secret');
+export const AUTH_BIZ_DELETE_SUB_ACCOUNT_SECRET = Symbol.for('auth_biz_delete_sub_account_secret');
+
+/**
+ * 二级账号
+ */
+export const AUTH_BIZ_CREATE_SUB_ACCOUNT = Symbol.for('auth_biz_create_sub_account');
+export const AUTH_BIZ_UPDATE_SUB_ACCOUNT = Symbol.for('auth_biz_update_sub_account');
+export const AUTH_BIZ_DELETE_SUB_ACCOUNT = Symbol.for('auth_biz_delete_sub_account');
+export const AUTH_BIZ_UPDATE_SECONDARY_ACCOUNT = Symbol.for('auth_biz_update_secondary_account');
+export const AUTH_BIZ_CREATE_SECONDARY_ACCOUNT = Symbol.for('auth_biz_create_secondary_account');
+export const AUTH_BIZ_DELETE_SECONDARY_ACCOUNT = Symbol.for('auth_biz_delete_secondary_account');

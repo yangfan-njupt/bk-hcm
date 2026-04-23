@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { ref, computed, watch, inject, type Ref } from 'vue';
+import { ref, computed, watch, inject, type Ref, h } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-// import { Message, InfoBox } from 'bkui-vue';
+import { InfoBox, Message } from 'bkui-vue';
 import { Plus } from 'bkui-vue/lib/icon';
 import usePage from '@/hooks/use-page';
 import useSearchQs from '@/hooks/use-search-qs';
 import { useWhereAmI } from '@/hooks/useWhereAmI';
 import { ModelPropertyColumn, ModelPropertySearch } from '@/model/typings';
 import { transformSimpleCondition, localPaginate, localSort } from '@/utils/search';
-import { useCloudAccountStore, type ISecondaryAccountItem } from '@/store/cloud-account';
+import { useSecondaryAccountStore, type ISecondaryAccountItem } from '@/store/cloud-account-manage/secondary-account';
 import { VendorEnum } from '@/common/constant';
 import { QueryFilterType, RulesItem } from '@/typings';
 
@@ -25,7 +25,7 @@ const currentVendor = inject<Ref<VendorEnum>>('currentVendor', ref(VendorEnum.TC
 
 const route = useRoute();
 const router = useRouter();
-const cloudAccountStore = useCloudAccountStore();
+const secondaryAccountStore = useSecondaryAccountStore();
 const { getBizsId } = useWhereAmI();
 
 // 创建模型实例
@@ -47,7 +47,7 @@ const fullList = ref<ISecondaryAccountItem[]>([]);
 // 当前页展示的数据
 const tableData = ref<ISecondaryAccountItem[]>([]);
 
-// 排序参数
+// 排序参数（默认按创建时间倒序）
 const sortParams = ref<{ sort: string; order: string }>({ sort: 'created_at', order: 'DESC' });
 
 // 分页
@@ -94,7 +94,7 @@ const loadFullList = async () => {
     };
 
     // 使用 rollRequest 获取全量数据
-    const list = await cloudAccountStore.getSecondaryAccountFullList(
+    const list = await secondaryAccountStore.getSecondaryAccountFullList(
       getBizsId(),
       vendorFilter,
       (progressList, count) => {
@@ -160,7 +160,7 @@ watch(
 );
 
 // 加载状态
-const isLoading = computed(() => cloudAccountStore.accountListLoading);
+const isLoading = computed(() => secondaryAccountStore.accountListLoading);
 
 // 详情侧栏状态
 const showDetailSideslider = ref(false);
@@ -169,7 +169,46 @@ const currentAccount = ref<ISecondaryAccountItem | null>(null);
 const handleViewDetails = (row: ISecondaryAccountItem) => {
   currentAccount.value = row;
   showDetailSideslider.value = true;
+  // 将 id 写入 URL query，支持分享/刷新/浏览器后退
+  router.replace({ query: { ...route.query, id: row.id, _t: undefined } });
 };
+
+// 弹窗被用户手动关闭（点击 X / quick-close）时，同步移除 URL 中的 id
+watch(showDetailSideslider, (val) => {
+  if (!val && route.query.id) {
+    const query = { ...route.query };
+    delete query.id;
+    router.replace({ query });
+  }
+});
+
+// 监听 route.query.id，使用详情接口加载并打开弹窗
+watch(
+  () => route.query.id,
+  async (id) => {
+    if (!id) {
+      showDetailSideslider.value = false;
+      currentAccount.value = null;
+      return;
+    }
+    try {
+      const detail = await secondaryAccountStore.getSecondaryAccountDetail(getBizsId(), id as string);
+      if (detail) {
+        currentAccount.value = detail;
+        showDetailSideslider.value = true;
+      } else {
+        Message({ theme: 'warning', message: `未找到账号数据` });
+        // 移除id
+        router.replace({ query: { ...route.query, id: undefined } });
+      }
+    } catch (error) {
+      console.error('获取账号详情失败:', error);
+      Message({ theme: 'error', message: '获取账号详情失败' });
+      router.replace({ query: { ...route.query, id: undefined } });
+    }
+  },
+  { immediate: true },
+);
 
 const handleDetailUpdateSuccess = () => {
   refreshList();
@@ -211,89 +250,90 @@ const handleReset = () => {
   searchQs.clear();
 };
 
-// const handleSyncAccount = () => {
-//   const SyncContent = () =>
-//     h('div', { class: 'sync-info-content' }, [
-//       h('p', { class: 'sync-info-title' }, '同步信息包含：'),
-//       h('ul', { class: 'sync-info-list' }, [
-//         h('li', '二级账号本身的信息（邮箱、保护状态、MFA等）'),
-//         h('li', '二级账号下的三级账号'),
-//         h('li', '二级账号下的权限模板'),
-//       ]),
-//       h('p', { class: 'sync-info-tip' }, '同步操作可能需要几分钟，请耐心等待'),
-//     ]);
+// 同步账号功能
+const handleSyncAccount = () => {
+  const SyncContent = () =>
+    h('div', { class: 'sync-info-content' }, [
+      h('p', { class: 'sync-info-title' }, '同步信息包含：'),
+      h('ul', { class: 'sync-info-list' }, [
+        h('li', '二级账号本身的信息（邮箱、保护状态、MFA等）'),
+        h('li', '二级账号下的三级账号'),
+        h('li', '二级账号下的权限模板'),
+      ]),
+      h('p', { class: 'sync-info-tip' }, '同步操作可能需要几分钟，请耐心等待'),
+    ]);
 
-//   InfoBox({
-//     title: '确定同步本业务下所有二级账号信息',
-//     type: 'warning',
-//     subTitle: SyncContent,
-//     width: 480,
-//     contentAlign: 'left',
-//     confirmText: '确定',
-//     cancelText: '取消',
-//     beforeClose: (action: string) =>
-//       new Promise(async (resolve) => {
-//         if (action === 'confirm') {
-//           const loadingBox = InfoBox({
-//             type: 'loading',
-//             title: '同步二级账号信息中...',
-//             subTitle: '请耐心等待',
-//             width: 400,
-//             closeIcon: false,
-//             showMask: true,
-//             quickClose: false,
-//             escClose: false,
-//             confirmText: '',
-//             cancelText: '',
-//           });
+  InfoBox({
+    title: '确定同步本业务下所有二级账号信息',
+    type: 'warning',
+    subTitle: SyncContent,
+    width: 480,
+    contentAlign: 'left',
+    confirmText: '确定',
+    cancelText: '取消',
+    beforeClose: (action: string) =>
+      new Promise(async (resolve) => {
+        if (action === 'confirm') {
+          const loadingBox = InfoBox({
+            type: 'loading',
+            title: '同步二级账号信息中...',
+            subTitle: '请耐心等待',
+            width: 400,
+            closeIcon: false,
+            showMask: true,
+            quickClose: false,
+            escClose: false,
+            confirmText: '',
+            cancelText: '',
+          });
 
-//           try {
-//             const bkBizId = getBizsId();
-//             const vendor = currentVendor?.value || VendorEnum.TCLOUD;
-//             const accountIds = tableData.value.map((item) => item.id);
+          try {
+            const bkBizId = getBizsId();
+            const vendor = currentVendor?.value || VendorEnum.TCLOUD;
+            const accountIds = tableData.value.map((item) => item.id);
 
-//             if (accountIds.length === 0) {
-//               loadingBox.hide();
-//               Message({ theme: 'warning', message: '当前没有可同步的账号' });
-//               resolve(true);
-//               return;
-//             }
+            if (accountIds.length === 0) {
+              loadingBox.hide();
+              Message({ theme: 'warning', message: '当前没有可同步的账号' });
+              resolve(true);
+              return;
+            }
 
-//             const results = await cloudAccountStore.syncSecondaryAccounts(bkBizId, vendor, accountIds);
-//             loadingBox.hide();
+            const results = await secondaryAccountStore.syncSecondaryAccounts(bkBizId, vendor, accountIds);
+            loadingBox.hide();
 
-//             if (results.failed.length === 0) {
-//               Message({ theme: 'success', message: `同步完成，成功同步 ${results.success.length} 个账号` });
-//             } else if (results.success.length === 0) {
-//               Message({ theme: 'error', message: `同步失败，${results.failed.length} 个账号同步失败` });
-//             } else {
-//               Message({
-//                 theme: 'warning',
-//                 message: `部分同步完成：${results.success.length} 个成功，${results.failed.length} 个失败`,
-//               });
-//             }
+            if (results.failed.length === 0) {
+              Message({ theme: 'success', message: `同步完成，成功同步 ${results.success.length} 个账号` });
+            } else if (results.success.length === 0) {
+              Message({ theme: 'error', message: `同步失败，${results.failed.length} 个账号同步失败` });
+            } else {
+              Message({
+                theme: 'warning',
+                message: `部分同步完成：${results.success.length} 个成功，${results.failed.length} 个失败`,
+              });
+            }
 
-//             const { query } = route;
-//             const timestamp = Date.now();
-//             window.history.replaceState(
-//               null,
-//               '',
-//               `${route.path}?${new URLSearchParams({ ...query, _t: String(timestamp) } as any).toString()}`,
-//             );
-//             resolve(true);
-//           } catch (error) {
-//             console.error('同步失败:', error);
-//             loadingBox.hide();
-//             Message({ theme: 'error', message: '同步失败，请稍后重试' });
-//             resolve(true);
-//           }
-//         }
-//         if (action === 'cancel') {
-//           resolve(true);
-//         }
-//       }),
-//   });
-// };
+            const { query } = route;
+            const timestamp = Date.now();
+            window.history.replaceState(
+              null,
+              '',
+              `${route.path}?${new URLSearchParams({ ...query, _t: String(timestamp) } as any).toString()}`,
+            );
+            resolve(true);
+          } catch (error) {
+            console.error('同步失败:', error);
+            loadingBox.hide();
+            Message({ theme: 'error', message: '同步失败，请稍后重试' });
+            resolve(true);
+          }
+        }
+        if (action === 'cancel') {
+          resolve(true);
+        }
+      }),
+  });
+};
 </script>
 
 <template>
@@ -310,10 +350,10 @@ const handleReset = () => {
           录入账号
         </bk-button>
 
-        <!-- <bk-button @click="handleSyncAccount">
+        <bk-button @click="handleSyncAccount">
           <i class="hcm-icon bkhcm-icon-update mr6"></i>
           同步账号
-        </bk-button> -->
+        </bk-button>
       </div>
 
       <!-- 数据列表 -->

@@ -6,6 +6,7 @@ import rollRequest from '@blueking/roll-request';
 import { IAppliedReasonItem } from '@/views/cloud-account-manage/permission-policy/typings';
 import { resolveBizApiPath } from '@/utils/search';
 import { VendorEnum } from '@/common/constant';
+import { ListGeneratorFactory } from '@/components/form/list.vue';
 
 // 权限策略列表
 export interface IPermissionPolicyItem {
@@ -386,18 +387,21 @@ export const usePermissionPolicyStore = defineStore('permissionPolicy', () => {
     }
   };
 
-  const createPolicyLibraryListGenerator = (vendor: string) => {
-    return async function* (keyword?: string) {
+  const createPolicyLibraryListGenerator = (vendor: string): ListGeneratorFactory => {
+    return async function* (keywordOrOptions) {
       const api = `/api/v1/cloud/vendors/${vendor}/permission_policy_libraries/list`;
-      const filter = keyword
-        ? { op: QueryRuleOPEnum.AND, rules: [{ field: 'name', op: QueryRuleOPEnum.CS, value: keyword }] }
-        : {};
+      const rules: Array<{ field: string; op: string; value: any }> = [];
+      const keyword = typeof keywordOrOptions === 'string' ? keywordOrOptions : undefined;
+      const options = typeof keywordOrOptions === 'object' ? keywordOrOptions : undefined;
+      if (keyword) rules.push({ field: 'name', op: QueryRuleOPEnum.CS, value: keyword });
+      if (options?.ids?.length) rules.push({ field: 'id', op: QueryRuleOPEnum.IN, value: options.ids });
+      const filterParams = rules.length > 0 ? { op: QueryRuleOPEnum.AND, rules } : {};
 
       const gen = await rollRequest({ httpClient: http, pageEnableCountKey: 'count' }).rollReqUseCount<
         IListResData<IPermissionPolicyItem[]>
       >(
         api,
-        { filter },
+        { filter: filterParams },
         { limit: 500, countGetter: (res) => res.data.count, listGetter: (res) => res.data.details, generator: true },
         true,
       );

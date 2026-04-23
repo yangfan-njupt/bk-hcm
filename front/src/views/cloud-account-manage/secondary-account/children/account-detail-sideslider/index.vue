@@ -1,15 +1,23 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { Message, InfoBox } from 'bkui-vue';
 import { Share } from 'bkui-vue/lib/icon';
-import type { ISecondaryAccountItem, IAccountSecretItem } from '@/store/cloud-account';
-import { useCloudAccountStore } from '@/store/cloud-account';
+import type { ISecondaryAccountItem, IAccountSecretItem } from '@/store/cloud-account-manage/secondary-account';
+import { useSecondaryAccountStore } from '@/store/cloud-account-manage/secondary-account';
 import { useWhereAmI } from '@/hooks/useWhereAmI';
 import DisplayValue from '@/components/display-value/index.vue';
 import SecretKeyDialog from './secret-key-dialog.vue';
 import AccountFormSideslider from '../account-form-sideslider/index.vue';
+import AccountCreateSideslider from '@/views/cloud-account-manage/tertiary-account/children/account-create-sideslider/index.vue';
 import type { ModelProperty } from '@/model/typings';
 import type { DisplayType } from '@/components/display-value/typings';
+import {
+  AUTH_BIZ_UPDATE_SECONDARY_ACCOUNT,
+  AUTH_BIZ_CREATE_SECONDARY_ACCOUNT,
+  AUTH_BIZ_DELETE_SECONDARY_ACCOUNT,
+} from '@/constants/auth-symbols';
+import { useAccountStore } from '@/store/account';
 
 // 双向绑定控制显示状态
 const model = defineModel<boolean>();
@@ -27,8 +35,11 @@ const emit = defineEmits<{
 }>();
 
 // Store 和 Hooks
-const cloudAccountStore = useCloudAccountStore();
+const secondaryAccountStore = useSecondaryAccountStore();
+const accountStore = useAccountStore();
 const { getBizsId } = useWhereAmI();
+const route = useRoute();
+const router = useRouter();
 
 // 密钥列表数据
 const secretList = ref<IAccountSecretItem[]>([]);
@@ -41,6 +52,9 @@ const isEditMode = ref(false);
 
 // 编辑账号弹窗状态
 const showAccountFormSideslider = ref(false);
+
+// 新建三级账号弹窗状态
+const showCreateSubAccount = ref(false);
 
 // 当前展示的账号数据（用于支持编辑后实时更新）
 const currentRowData = ref<ISecondaryAccountItem | null>(null);
@@ -60,7 +74,7 @@ const fetchSecretList = async () => {
 
   try {
     secretLoading.value = true;
-    const { list } = await cloudAccountStore.getAccountSecretList(getBizsId(), currentRowData.value.vendor, {
+    const { list } = await secondaryAccountStore.getAccountSecretList(getBizsId(), currentRowData.value.vendor, {
       filter: {
         op: 'and',
         rules: [{ field: 'account_id', op: 'eq', value: currentRowData.value.id }],
@@ -107,23 +121,19 @@ const baseInfoFields = computed<Array<{ label: string; value: any; property: Mod
     },
     {
       label: '管理业务',
-      value: null,
-      property: { id: 'manage_biz', name: '管理业务', type: 'string' },
+      value: currentRowData.value?.bk_biz_id,
+      property: { id: 'bk_biz_id', name: '管理业务', type: 'business' },
     },
     {
       label: '二级账号名称',
       value: currentRowData.value?.name,
       property: { id: 'name', name: '二级账号名称', type: 'string' },
     },
-    {
-      label: '运营产品',
-      value: null,
-      property: { id: 'product', name: '运营产品', type: 'string' },
-    },
+
     {
       label: '二级账号ID',
-      value: currentRowData.value?.id,
-      property: { id: 'id', name: '二级账号ID', type: 'string' },
+      value: currentRowData.value?.extension?.cloud_main_account_id,
+      property: { id: 'extension.cloud_main_account_id', name: '二级账号ID', type: 'string' },
     },
     {
       label: '使用业务',
@@ -206,7 +216,7 @@ const handleDeleteSecret = (row: IAccountSecretItem) => {
     cancelText: '取消',
     onConfirm: async () => {
       try {
-        await cloudAccountStore.deleteAccountSecret(getBizsId(), row.vendor, [row.id]);
+        await secondaryAccountStore.deleteAccountSecret(getBizsId(), row.vendor, [row.id]);
         Message({ theme: 'success', message: '删除成功' });
         fetchSecretList();
       } catch (error) {
@@ -231,6 +241,27 @@ const handleEditBaseInfo = () => {
   }
 };
 
+// 跳转到三级账号列表（按当前二级账号ID筛选）
+const handleGoToTertiaryAccount = () => {
+  const cloudMainAccountId = (currentRowData.value as any)?.extension?.cloud_main_account_id;
+  if (!cloudMainAccountId) return;
+  // 构建目标 query：切换 tab + 带上筛选条件 + 移除 id
+  const { id, ...restQuery } = route.query;
+  router.push({
+    query: {
+      ...restQuery,
+      type: 'tertiary-account',
+      filter: `extension.cloud_main_account_id=${cloudMainAccountId}`,
+    },
+  });
+};
+
+// 新建三级账号成功回调
+const handleCreateSubAccountSuccess = () => {
+  showCreateSubAccount.value = false;
+  emit('update-success');
+};
+
 // 编辑基本信息成功回调
 const handleAccountFormSuccess = (updatedData?: ISecondaryAccountItem) => {
   if (updatedData) {
@@ -252,7 +283,15 @@ const handleAccountFormSuccess = (updatedData?: ISecondaryAccountItem) => {
         <template #header>
           <div class="card-header btw">
             <span class="card-title">基本信息</span>
-            <bk-button theme="primary" outline size="small" @click="handleEditBaseInfo">编辑</bk-button>
+            <hcm-auth
+              v-if="getBizsId()"
+              :sign="{ type: AUTH_BIZ_UPDATE_SECONDARY_ACCOUNT, relation: [getBizsId()] }"
+              v-slot="{ noPerm }"
+            >
+              <bk-button theme="primary" outline size="small" :disabled="noPerm" @click="handleEditBaseInfo">
+                编辑
+              </bk-button>
+            </hcm-auth>
           </div>
         </template>
         <div class="info-grid">
@@ -272,7 +311,7 @@ const handleAccountFormSuccess = (updatedData?: ISecondaryAccountItem) => {
         <template #header>
           <div class="card-header">
             <span class="card-title">三级账号</span>
-            <bk-button theme="primary" text class="add-btn">
+            <bk-button theme="primary" text class="add-btn" @click="showCreateSubAccount = true">
               <i class="hcm-icon bkhcm-icon-plus-circle-shape"></i>
               新建三级账号
             </bk-button>
@@ -281,7 +320,7 @@ const handleAccountFormSuccess = (updatedData?: ISecondaryAccountItem) => {
         <div class="sub-account-info">
           <span class="label">三级账号数量：</span>
           <span class="count">{{ currentRowData?.sub_account_count ?? 0 }} 个</span>
-          <Share class="icon-link" />
+          <Share class="icon-link" @click="handleGoToTertiaryAccount" />
         </div>
       </bk-card>
 
@@ -290,10 +329,15 @@ const handleAccountFormSuccess = (updatedData?: ISecondaryAccountItem) => {
         <template #header>
           <div class="card-header">
             <span class="card-title">资源密钥</span>
-            <bk-button theme="primary" text class="add-btn" @click="handleAddSecret">
-              <i class="hcm-icon bkhcm-icon-plus-circle-shape"></i>
-              录入密钥
-            </bk-button>
+            <hcm-auth
+              :sign="{ type: AUTH_BIZ_CREATE_SECONDARY_ACCOUNT, relation: [accountStore.bizs] }"
+              v-slot="{ noPerm }"
+            >
+              <bk-button theme="primary" text class="add-btn" :disabled="noPerm" @click="handleAddSecret">
+                <i class="hcm-icon bkhcm-icon-plus-circle-shape"></i>
+                录入密钥
+              </bk-button>
+            </hcm-auth>
           </div>
         </template>
         <bk-loading :loading="secretLoading">
@@ -324,10 +368,27 @@ const handleAccountFormSuccess = (updatedData?: ISecondaryAccountItem) => {
             </bk-table-column>
             <bk-table-column label="操作" width="120" fixed="right">
               <template #default="{ row }">
-                <bk-button theme="primary" text class="mr8" @click="handleEditSecret(row)">编辑</bk-button>
-                <bk-button theme="danger" text :disabled="row.status === 'normal'" @click="handleDeleteSecret(row)">
-                  删除
-                </bk-button>
+                <hcm-auth
+                  :sign="{ type: AUTH_BIZ_UPDATE_SECONDARY_ACCOUNT, relation: [accountStore.bizs] }"
+                  v-slot="{ noPerm }"
+                >
+                  <bk-button theme="primary" text class="mr8" :disabled="noPerm" @click="handleEditSecret(row)">
+                    编辑
+                  </bk-button>
+                </hcm-auth>
+                <hcm-auth
+                  :sign="{ type: AUTH_BIZ_DELETE_SECONDARY_ACCOUNT, relation: [accountStore.bizs] }"
+                  v-slot="{ noPerm }"
+                >
+                  <bk-button
+                    theme="danger"
+                    text
+                    :disabled="row.status === 'normal' || noPerm"
+                    @click="handleDeleteSecret(row)"
+                  >
+                    删除
+                  </bk-button>
+                </hcm-auth>
               </template>
             </bk-table-column>
           </bk-table>
@@ -350,6 +411,13 @@ const handleAccountFormSuccess = (updatedData?: ISecondaryAccountItem) => {
       :is-edit="true"
       :account-data="currentRowData"
       @success="handleAccountFormSuccess"
+    />
+
+    <!-- 新建三级账号弹窗 -->
+    <AccountCreateSideslider
+      v-model:model-value="showCreateSubAccount"
+      :default-account-id="currentRowData?.id || ''"
+      @success="handleCreateSubAccountSuccess"
     />
   </bk-sideslider>
 </template>

@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { h } from 'vue';
 import { PaginationType } from '@/typings';
 import { ModelPropertyColumn } from '@/model/typings';
 import usePage from '@/hooks/use-page';
 import useTableSettings from '@/hooks/use-table-settings';
-import { Button } from 'bkui-vue';
-import type { ISecondaryAccountItem } from '@/store/cloud-account';
-import BusinessValue from '@/components/display-value/business-value.vue';
+import { type ISecondaryAccountItem } from '@/store/cloud-account-manage/secondary-account';
+import { AUTH_BIZ_UPDATE_SECONDARY_ACCOUNT } from '@/constants/auth-symbols';
+import { useWhereAmI } from '@/hooks/useWhereAmI';
+import { MENU_BUSINESS_CLOUD_ACCOUNT } from '@/constants/menu-symbol';
+import routeAction from '@/router/utils/action';
 
 export interface IDataListProps {
   columns: ModelPropertyColumn[];
@@ -25,25 +26,9 @@ const emit = defineEmits<{
   'edit-account': [row: ISecondaryAccountItem];
 }>();
 
-const { handlePageChange, handlePageSizeChange, handleSort } = usePage();
-
+const { getBizsId } = useWhereAmI();
 const { settings } = useTableSettings(props.columns);
-
-// 格式化邮箱展示（脱敏处理）
-const formatEmail = (email: string) => {
-  if (!email) return '--';
-  const atIndex = email.indexOf('@');
-  if (atIndex <= 3) return email;
-  const prefix = email.substring(0, 3);
-  const suffix = email.substring(atIndex);
-  return `${prefix}***${suffix}`;
-};
-
-// 格式化数组展示
-const formatArray = (arr: any[]) => {
-  if (!arr || !arr.length) return '--';
-  return arr.join(', ');
-};
+const { handlePageChange, handlePageSizeChange, handleSort } = usePage();
 
 // 查看详情 - 触发事件
 const handleViewDetails = (row: ISecondaryAccountItem) => {
@@ -55,60 +40,12 @@ const handleEditAccount = (row: ISecondaryAccountItem) => {
   emit('edit-account', row);
 };
 
-// 自定义渲染列
-const getColumnRender = (column: ModelPropertyColumn) => {
-  // 名称列 - 点击打开详情侧栏
-  if (column.id === 'name') {
-    return ({ row }: { row: ISecondaryAccountItem }) =>
-      h(
-        Button,
-        {
-          text: true,
-          theme: 'primary',
-          onClick: () => handleViewDetails(row),
-        },
-        () => row.name || '--',
-      );
-  }
-  // 邮箱列 - 脱敏处理
-  if (column.id === 'email') {
-    return ({ row }: { row: ISecondaryAccountItem }) => formatEmail(row.email);
-  }
-  // 负责人、安全负责人列 - 数组展示
-  if (column.id === 'managers' || column.id === 'security_managers') {
-    return ({ row }: { row: ISecondaryAccountItem }) => formatArray(row[column.id]);
-  }
-  // 使用业务列 - 使用 BusinessValue 组件，tag 模式展示
-  if (column.id === 'usage_biz_ids') {
-    return ({ row }: { row: ISecondaryAccountItem }) =>
-      h(BusinessValue, {
-        value: row.usage_biz_ids,
-        display: { appearance: 'tag' },
-      });
-  }
-  // 三级账号数、密钥数 - 普通标签样式
-  if (column.id === 'sub_account_count' || column.id === 'account_secret_count') {
-    return ({ row }: { row: ISecondaryAccountItem }) => {
-      const value = row[column.id as keyof ISecondaryAccountItem] ?? 0;
-      return h('span', { style: { color: '#3A84FF' } }, value);
-    };
-  }
-  // 资源纳管状态列 - 标签样式
-  if (column.id === 'sync_status') {
-    return ({ row }: { row: ISecondaryAccountItem }) => {
-      const statusMap: Record<string, { class: string; text: string }> = {
-        sync_success: { class: 'status-tag status-tag-success', text: '同步成功' },
-        sync_failed: { class: 'status-tag status-tag-failed', text: '同步失败' },
-        not_sync: { class: 'status-tag status-tag-not-sync', text: '未同步' },
-        syncing: { class: 'status-tag status-tag-syncing', text: '同步中' },
-        managed: { class: 'status-tag status-tag-managed', text: '已纳管' },
-        unmanaged: { class: 'status-tag status-tag-unmanaged', text: '未纳管' },
-      };
-      const status = statusMap[row.sync_status] || { class: '', text: row.sync_status || '--' };
-      return h('span', { class: status.class }, status.text);
-    };
-  }
-  return null;
+const handleGoToPage = (row: ISecondaryAccountItem, column: ModelPropertyColumn, type: string) => {
+  const { searchField, valueField } = column?.meta?.search?.props;
+  routeAction.open({
+    name: MENU_BUSINESS_CLOUD_ACCOUNT,
+    query: { type, filter: `${searchField}=${row?.[valueField]}` },
+  });
 };
 </script>
 
@@ -118,7 +55,7 @@ const getColumnRender = (column: ModelPropertyColumn) => {
       row-hover="auto"
       :data="list"
       :pagination="pagination"
-      :max-height="`calc(100vh - 400px)`"
+      :max-height="`calc(100vh - 500px)`"
       :settings="settings"
       remote-pagination
       show-overflow-tooltip
@@ -139,9 +76,32 @@ const getColumnRender = (column: ModelPropertyColumn) => {
         v-bind="column"
       >
         <template #default="{ row }">
-          <template v-if="getColumnRender(column)">
-            <component :is="() => getColumnRender(column)({ row })" />
+          <template v-if="column.id === 'name'">
+            <bk-button theme="primary" text @click="handleViewDetails(row)">{{ row.name || '--' }}</bk-button>
           </template>
+
+          <template v-else-if="column.id === 'sub_account_count'">
+            <display-value
+              :property="column"
+              :value="row?.sub_account_count ?? 0"
+              :display="{
+                appearance: 'link-button',
+                appearanceProps: { isIcon: true, onClick: () => handleGoToPage(row, column, 'tertiary-account') },
+              }"
+            />
+          </template>
+
+          <template v-else-if="column.id === 'account_secret_count'">
+            <display-value
+              :property="column"
+              :value="row?.account_secret_count ?? 0"
+              :display="{
+                appearance: 'link-button',
+                appearanceProps: { isIcon: true, onClick: () => handleGoToPage(row, column, 'cloud-secret') },
+              }"
+            />
+          </template>
+
           <template v-else>
             <display-value :property="column" :value="row[column.id]" :display="column?.meta?.display" />
           </template>
@@ -149,7 +109,13 @@ const getColumnRender = (column: ModelPropertyColumn) => {
       </bk-table-column>
       <bk-table-column label="操作" width="100" fixed="right">
         <template #default="{ row }">
-          <bk-button theme="primary" text @click="handleEditAccount(row)">编辑</bk-button>
+          <hcm-auth
+            v-if="getBizsId()"
+            :sign="{ type: AUTH_BIZ_UPDATE_SECONDARY_ACCOUNT, relation: [getBizsId()] }"
+            v-slot="{ noPerm }"
+          >
+            <bk-button theme="primary" text :disabled="noPerm" @click="handleEditAccount(row)">编辑</bk-button>
+          </hcm-auth>
         </template>
       </bk-table-column>
     </bk-table>

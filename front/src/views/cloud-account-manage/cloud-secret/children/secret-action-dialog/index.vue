@@ -1,67 +1,47 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { Message } from 'bkui-vue';
-import { useCloudAccountStore } from '@/store/cloud-account';
+import { useCloudSecretStore } from '@/store/cloud-account-manage/cloud-secret';
 import { useWhereAmI } from '@/hooks/useWhereAmI';
-import { SECRET_ACTION_CONFIG } from '../constants';
-import type { ICloudSecretItem, SecretActionType } from '../typings';
+import { SECRET_ACTION_CONFIG } from '../../constants';
+import type { ICloudSecretItem, SecretActionType } from '../../typings';
 
-// Props 定义
+const model = defineModel<boolean>();
+
 const props = defineProps<{
-  modelValue: boolean;
   actionType: SecretActionType;
   secretData: ICloudSecretItem | null;
   vendor: string;
 }>();
 
-// Emits 定义
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
   success: [];
 }>();
 
-// Store 和 Hooks
-const cloudAccountStore = useCloudAccountStore();
+const cloudSecretStore = useCloudSecretStore();
 const { getBizsId } = useWhereAmI();
 
-// 内部显示状态
-const isShow = computed({
-  get: () => props.modelValue,
-  set: (val) => emit('update:modelValue', val),
-});
-
-// 已知晓变更影响复选框
 const isAcknowledged = ref(false);
-
-// 提交中状态
 const isSubmitting = ref(false);
-
-// 获取当前操作配置
 const actionConfig = computed(() => SECRET_ACTION_CONFIG[props.actionType]);
-
-// 确认按钮是否禁用
 const isConfirmDisabled = computed(() => !isAcknowledged.value || isSubmitting.value);
 
-// 格式化时间显示
 const formatDateTime = (dateStr?: string) => {
   if (!dateStr) return '--';
   return dateStr.replace('T', ' ').replace('Z', '');
 };
 
-// 关闭弹窗时重置状态
-watch(isShow, (val) => {
+watch(model, (val) => {
   if (!val) {
     isAcknowledged.value = false;
     isSubmitting.value = false;
   }
 });
 
-// 取消操作
 const handleCancel = () => {
-  isShow.value = false;
+  model.value = false;
 };
 
-// 确认操作
 const handleConfirm = async () => {
   if (!props.secretData || !isAcknowledged.value) return;
 
@@ -71,13 +51,11 @@ const handleConfirm = async () => {
     const bkBizId = getBizsId();
 
     if (props.actionType === 'delete') {
-      // 删除密钥
-      await cloudAccountStore.deleteSubAccountSecret(bkBizId, props.vendor, [props.secretData.id]);
+      await cloudSecretStore.deleteSubAccountSecret(bkBizId, props.vendor, [props.secretData.id]);
       Message({ theme: 'success', message: '删除密钥申请已提交' });
     } else {
-      // 启用或禁用密钥
       const newStatus = props.actionType === 'enable' ? 'enabled' : 'disabled';
-      await cloudAccountStore.updateSubAccountSecretStatus(bkBizId, props.vendor, [
+      await cloudSecretStore.updateSubAccountSecretStatus(bkBizId, props.vendor, [
         {
           id: props.secretData.id,
           status: newStatus,
@@ -86,7 +64,7 @@ const handleConfirm = async () => {
       Message({ theme: 'success', message: `${props.actionType === 'enable' ? '启用' : '禁用'}密钥申请已提交` });
     }
 
-    isShow.value = false;
+    model.value = false;
     emit('success');
   } catch (error) {
     console.error('操作失败:', error);
@@ -98,23 +76,25 @@ const handleConfirm = async () => {
 </script>
 
 <template>
-  <bk-dialog
-    v-model:is-show="isShow"
-    :title="actionConfig?.title"
-    :width="480"
-    header-align="center"
-    footer-align="center"
-    :quick-close="false"
-  >
+  <bk-dialog v-model:is-show="model" :width="480" header-align="center" footer-align="center" :quick-close="false">
+    <template #header>
+      <div class="dialog-header">
+        <svg class="icon svg-icon">
+          <use xlink:href="#bkhcm-icon-tishi"></use>
+        </svg>
+        <span>{{ actionConfig?.title }}</span>
+      </div>
+    </template>
+
     <div class="secret-action-dialog">
-      <!-- 警告提示 -->
-      <bk-alert :theme="actionConfig?.alertType" :title="actionConfig?.alertMessage" class="alert-box">
-        <template v-if="actionConfig?.alertDescription" #description>
-          {{ actionConfig.alertDescription }}
+      <bk-alert :theme="actionConfig?.alertType" class="alert-box">
+        <template #title>
+          <span>
+            {{ actionConfig?.alertMessage }}
+          </span>
         </template>
       </bk-alert>
 
-      <!-- 密钥信息 -->
       <div class="secret-info">
         <div class="info-item">
           <span class="label">密钥ID：</span>
@@ -130,10 +110,9 @@ const handleConfirm = async () => {
         </div>
       </div>
 
-      <!-- 确认复选框 -->
-      <div class="acknowledge-box">
-        <bk-checkbox v-model="isAcknowledged">已知晓变更影响，仍需变更</bk-checkbox>
-      </div>
+      <bk-checkbox v-model="isAcknowledged">
+        <span class="acknowledge-box-label">已知晓变更影响，仍需变更</span>
+      </bk-checkbox>
     </div>
 
     <template #footer>
@@ -153,38 +132,62 @@ const handleConfirm = async () => {
 </template>
 
 <style lang="scss" scoped>
+:deep(.bk-dialog-content) {
+  padding: 0 32px;
+}
+
+:deep(.bk-dialog-header) {
+  padding: 24px 32px 0;
+}
+
+:deep(.bk-alert-icon-info) {
+  margin-top: 3px;
+}
+
 .secret-action-dialog {
   .alert-box {
     margin-bottom: 16px;
+
+    span {
+      white-space: pre-wrap;
+      word-break: break-all;
+      line-height: 20px;
+    }
   }
 
   .secret-info {
     background: #f5f7fa;
     border-radius: 2px;
-    padding: 16px 24px;
+    padding: 14px 24px;
     margin-bottom: 16px;
 
     .info-item {
       display: flex;
       align-items: center;
+      line-height: 20px;
       font-size: 12px;
-      line-height: 28px;
+      margin-bottom: 12px;
+      font-weight: 400;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
 
       .label {
-        color: #979ba5;
-        min-width: 100px;
+        min-width: 84px;
         text-align: right;
+        color: #313238;
       }
 
       .value {
-        color: #313238;
         margin-left: 8px;
+        word-break: break-all;
       }
     }
   }
 
-  .acknowledge-box {
-    padding: 8px 0;
+  .acknowledge-box-label {
+    font-size: 12px;
   }
 }
 
@@ -195,6 +198,20 @@ const handleConfirm = async () => {
 
   .bk-button {
     min-width: 88px;
+  }
+}
+
+.dialog-header {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #4d4f56;
+
+  .svg-icon {
+    width: 42px;
+    height: 42px;
+    margin-bottom: 11px;
   }
 }
 </style>

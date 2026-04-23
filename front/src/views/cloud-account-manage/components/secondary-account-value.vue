@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue';
 import CombineRequest from '@blueking/combine-request';
-import { useCloudAccountStore } from '@/store/cloud-account';
+import { useSecondaryAccountStore } from '@/store/cloud-account-manage/secondary-account';
 import { SecondaryAccountResourceTypeEnum, VendorEnum } from '@/common/constant';
 
 const props = defineProps<{ value: string | string[]; vendor?: VendorEnum; resType: string; bizId?: number }>();
@@ -16,7 +16,7 @@ const localValue = computed(() => {
 const displayValue = computed(() => {
   const names = localValue.value.map((id) => {
     // 每次从全局store中查询获取
-    const account = cloudAccountStore.allSecondaryAccountCacheList.get(`${id}@${resType.value}@${bizId.value}`);
+    const account = secondaryAccountStore.allSecondaryAccountCacheList.get(`${id}@${resType.value}@${bizId.value}`);
     if (!account) {
       return `${id} (--)`;
     }
@@ -28,7 +28,7 @@ const vendor = computed(() => props.vendor);
 const resType = computed(() => props.resType);
 const bizId = computed(() => props.bizId || 0);
 
-const cloudAccountStore = useCloudAccountStore();
+const secondaryAccountStore = useSecondaryAccountStore();
 
 const combineRequest = CombineRequest.setup(Symbol.for('secondary-account-value'), (params: any[]) => {
   const requestIdsMap = new Map<string, string[]>();
@@ -41,7 +41,7 @@ const combineRequest = CombineRequest.setup(Symbol.for('secondary-account-value'
   // 将map数据拆解出来通过key去调取接口
   for (const [key, value] of requestIdsMap) {
     const [bizId, vendor, resType] = key.split('@');
-    cloudAccountStore.getSecondaryAccountListByAccountIds(
+    secondaryAccountStore.getSecondaryAccountListByAccountIds(
       value,
       vendor as VendorEnum,
       resType as SecondaryAccountResourceTypeEnum,

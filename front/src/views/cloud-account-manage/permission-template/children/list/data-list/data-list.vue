@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { inject, reactive, type Ref, ref, computed } from 'vue';
-import { Share } from 'bkui-vue/lib/icon';
+import { inject, type Ref, ref, computed } from 'vue';
 import { PaginationType } from '@/typings';
 import { ModelPropertyColumn } from '@/model/typings';
 import {
@@ -14,6 +13,9 @@ import { SecondaryAccountResourceTypeEnum, VendorEnum } from '@/common/constant'
 import { AUTH_UPDATE_PERMISSION_TEMPLATE, AUTH_DELETE_PERMISSION_TEMPLATE } from '@/constants/auth-symbols';
 import { getTypeData } from '@/views/cloud-account-manage/permission-template/utils';
 import SecondaryAccountValue from '@/views/cloud-account-manage/components/secondary-account-value.vue';
+import routeAction from '@/router/utils/action';
+import { MENU_BUSINESS_CLOUD_ACCOUNT } from '@/constants/menu-symbol';
+import type { LinkPopoverItem } from '@/components/display-value/appearance/link-popover.vue';
 
 export interface IDataListProps {
   columns: ModelPropertyColumn[];
@@ -39,23 +41,20 @@ const { settings } = useTableSettings(props.columns);
 
 const bizId = computed(() => getBizsId());
 
-const subAccountCache = reactive<Record<string, string[]>>({});
-const subAccountLoading = reactive<Record<string, boolean>>({});
+const getSubAccountLoadFn = (row: IPermissionTemplateItem) => async (): Promise<LinkPopoverItem[]> => {
+  const sub_accounts = await permissionTemplateStore.getPermissionTemplateSubAccountIds(
+    bizId.value,
+    currentVendor.value,
+    row.id,
+  );
+  return sub_accounts.map(({ id, cloud_id }) => ({ id, label: cloud_id }));
+};
 
-const afterAssociatedSubAccountPopoverShow = async (_$event: any, row: IPermissionTemplateItem) => {
-  if (subAccountCache[row.id]) return;
-
-  subAccountLoading[row.id] = true;
-  try {
-    const ids = await permissionTemplateStore.getPermissionTemplateSubAccountIds(
-      bizId.value,
-      currentVendor.value,
-      row.id,
-    );
-    subAccountCache[row.id] = ids;
-  } finally {
-    subAccountLoading[row.id] = false;
-  }
+const handleGoToTertiaryAccount = (item: LinkPopoverItem) => {
+  routeAction.open({
+    name: MENU_BUSINESS_CLOUD_ACCOUNT,
+    query: { type: 'tertiary-account', id: item.id as string },
+  });
 };
 </script>
 
@@ -94,27 +93,18 @@ const afterAssociatedSubAccountPopoverShow = async (_$event: any, row: IPermissi
           />
         </template>
         <template v-else-if="column.id === 'associated_sub_account_count'">
-          <bk-popover
-            theme="light"
-            component-event-delay="300"
-            trigger="click"
-            render-type="shown"
-            placement="right"
-            :popover-delay="[300, 0]"
-            @after-show="($event: any) => afterAssociatedSubAccountPopoverShow($event, row)"
-          >
-            <bk-button theme="primary" text>{{ row.associated_sub_account_count || '--' }}</bk-button>
-            <template #content>
-              <bk-loading theme="primary" mode="spin" size="mini" :opacity="1" v-if="subAccountLoading[row.id]" />
-              <ul v-else-if="subAccountCache[row.id]?.length" class="sub-account-list">
-                <li v-for="id in subAccountCache[row.id]" :key="id" class="sub-account-item">
-                  <span class="sub-account-id">{{ id }}</span>
-                  <Share class="sub-account-link-icon" />
-                </li>
-              </ul>
-              <div v-else class="sub-account-empty">未查询到关联三级账号</div>
-            </template>
-          </bk-popover>
+          <display-value
+            :property="column"
+            :value="row.associated_sub_account_count"
+            :display="{
+              appearance: 'link-popover',
+              appearanceProps: {
+                loadFn: getSubAccountLoadFn(row),
+                onLinkClick: handleGoToTertiaryAccount,
+                emptyText: '未查询到关联三级账号',
+              },
+            }"
+          />
         </template>
         <template v-else>
           <display-value :property="column" :value="row[column.id]" :display="column?.meta?.display" />
@@ -159,44 +149,5 @@ const afterAssociatedSubAccountPopoverShow = async (_$event: any, row: IPermissi
 .actions {
   display: flex;
   gap: 12px;
-}
-
-.sub-account-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  width: 162px;
-  height: 140px;
-  overflow-y: auto;
-
-  .sub-account-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 4px 8px;
-    line-height: 28px;
-
-    &:nth-child(even) {
-      background: #fafbfd;
-    }
-
-    .sub-account-id {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .sub-account-link-icon {
-      font-size: 12px;
-      color: #3a84ff;
-      cursor: pointer;
-    }
-  }
-}
-
-.sub-account-empty {
-  padding: 8px 0;
-  color: #c4c6cc;
-  text-align: center;
 }
 </style>

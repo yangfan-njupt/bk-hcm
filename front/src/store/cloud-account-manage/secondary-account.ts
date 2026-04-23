@@ -5,17 +5,11 @@ import { IListResData, QueryBuilderType, QueryFilterType } from '@/typings';
 import { SecondaryAccountResourceTypeEnum, VendorEnum } from '@/common/constant';
 import { enableCount, resolveBizApiPath } from '@/utils/search';
 import rollRequest from '@blueking/roll-request';
-import {
-  USE_MOCK,
-  mockGetSubAccountSecretList,
-  mockUpdateSubAccountSecretStatus,
-  mockDeleteSubAccountSecret,
-} from '@/views/cloud-account-manage/cloud-secret/mock';
 
 // 二级账号项接口定义
 export interface ISecondaryAccountItem {
   id: string;
-  vendor: VendorEnum;
+  vendor: string;
   name: string;
   managers: string[];
   security_managers: string[];
@@ -37,12 +31,38 @@ export interface ISecondaryAccountItem {
   created_at: string;
   updated_at: string;
   extension: {
-    login_flag?: string;
-    action_flag?: string;
-    console_login?: number;
+    cloud_main_account_id: string;
+    cloud_secret_id: string;
+    cloud_sub_account_id: string;
     [k: string]: any;
   };
   [k: string]: any;
+}
+
+// 创建二级账号参数接口定义
+export interface IAccountCreateParams {
+  vendor: string;
+  name: string;
+  managers: string[];
+  security_managers?: string[];
+  type: string;
+  site: string;
+  bk_biz_id?: number;
+  usage_biz_ids: number[];
+  memo?: string;
+  extension: Record<string, any>;
+  remark?: string;
+}
+
+// 更新二级账号参数接口定义
+export interface IAccountUpdateParams {
+  name?: string;
+  managers?: string[];
+  security_managers?: string[];
+  bk_biz_id?: number;
+  usage_biz_ids?: number[];
+  memo?: string;
+  extension?: Record<string, any>;
 }
 
 // 账号密钥项接口定义
@@ -96,68 +116,10 @@ export interface ISecretCheckParams {
   };
 }
 
-// 创建二级账号参数接口定义
-export interface IAccountCreateParams {
-  vendor: string;
-  name: string;
-  managers: string[];
-  security_managers?: string[];
-  type: string;
-  site: string;
-  bk_biz_id?: number;
-  usage_biz_ids: number[];
-  memo?: string;
-  extension: Record<string, any>;
-  remark?: string;
-}
-
-// 更新二级账号参数接口定义
-export interface IAccountUpdateParams {
-  name?: string;
-  managers?: string[];
-  security_managers?: string[];
-  bk_biz_id?: number;
-  usage_biz_ids?: number[];
-  memo?: string;
-  extension?: Record<string, any>;
-}
-
-// 三级账号密钥项接口定义
-export interface ISubAccountSecretItem {
-  id: string;
-  vendor: string;
-  status: 'enabled' | 'disabled';
-  account_id: string;
-  sub_account_id: string;
-  extension: {
-    cloud_secret_id: string;
-    cloud_main_account_id: string;
-    cloud_sub_account_id: string;
-    console_login?: number;
-  };
-  tenant_id?: string;
-  cloud_created_at: string;
-  disabled_time?: string;
-  last_used_time?: string;
-  creator: string;
-  reviser: string;
-  created_at: string;
-  updated_at: string;
-  sub_account_manager?: string;
-  account_manager?: string;
-}
-
-// 更新密钥状态参数
-export interface IUpdateSecretStatusParams {
-  id: string;
-  status: 'enabled' | 'disabled';
-}
-
-export const useCloudAccountStore = defineStore('cloudAccount', () => {
+export const useSecondaryAccountStore = defineStore('secondaryAccount', () => {
   const accountListLoading = ref(false);
   const secretListLoading = ref(false);
   const secretCheckLoading = ref(false);
-  const subAccountSecretListLoading = ref(false);
 
   // 根据账号ID缓存二级账号列表
   const allSecondaryAccountCacheList = ref<Map<ISecondaryAccountItem['id'], ISecondaryAccountItem>>(new Map());
@@ -265,6 +227,24 @@ export const useCloudAccountStore = defineStore('cloudAccount', () => {
   };
 
   /**
+   * 获取二级账号详情（通过列表接口按 id 查询单条）
+   */
+  const getSecondaryAccountDetail = async (bk_biz_id: number, id: string): Promise<ISecondaryAccountItem | null> => {
+    const api = `/api/v1/cloud/bizs/${bk_biz_id}/accounts/list`;
+    try {
+      const res = await http.post(api, {
+        filter: { rules: [{ field: 'id', op: 'eq', value: id }], op: 'and' },
+        page: { count: false, start: 0, limit: 1 },
+      });
+      const list = res?.data?.details ?? [];
+      return list.length > 0 ? list[0] : null;
+    } catch (error) {
+      console.error(error);
+      return Promise.reject(error);
+    }
+  };
+
+  /**
    * 同步指定账号下指定资源
    * 接口文档：业务下同步指定账号下指定资源.md
    * @param bk_biz_id 业务ID
@@ -325,6 +305,37 @@ export const useCloudAccountStore = defineStore('cloudAccount', () => {
   };
 
   /**
+   * 创建二级账号（提交申请）
+   * @param bk_biz_id 业务ID
+   * @param params 账号参数
+   */
+  const createSecondaryAccount = async (bk_biz_id: number, params: IAccountCreateParams) => {
+    try {
+      const res = await http.post(`/api/v1/cloud/bizs/${bk_biz_id}/applications/types/add_account`, params);
+      return res?.data;
+    } catch (error) {
+      console.error(error);
+      return Promise.reject(error);
+    }
+  };
+
+  /**
+   * 更新二级账号
+   * @param bk_biz_id 业务ID
+   * @param account_id 账号ID
+   * @param params 更新参数
+   */
+  const updateSecondaryAccount = async (bk_biz_id: number, account_id: string, params: IAccountUpdateParams) => {
+    try {
+      const res = await http.patch(`/api/v1/cloud/bizs/${bk_biz_id}/accounts/${account_id}`, params);
+      return res?.data;
+    } catch (error) {
+      console.error(error);
+      return Promise.reject(error);
+    }
+  };
+
+  /**
    * 获取账号密钥列表
    * @param bk_biz_id 业务ID
    * @param vendor 云厂商
@@ -348,6 +359,28 @@ export const useCloudAccountStore = defineStore('cloudAccount', () => {
       return Promise.reject(error);
     } finally {
       secretListLoading.value = false;
+    }
+  };
+
+  /**
+   * 获取账号密钥详情（通过列表接口按 id 查询单条）
+   */
+  const getAccountSecretDetail = async (
+    bk_biz_id: number,
+    vendor: string,
+    id: string,
+  ): Promise<IAccountSecretItem | null> => {
+    const api = `/api/v1/cloud/bizs/${bk_biz_id}/vendors/${vendor}/account_secrets/list`;
+    try {
+      const res = await http.post(api, {
+        filter: { rules: [{ field: 'id', op: 'eq', value: id }], op: 'and' },
+        page: { count: false, start: 0, limit: 1 },
+      });
+      const list = res?.data?.details ?? [];
+      return list.length > 0 ? list[0] : null;
+    } catch (error) {
+      console.error(error);
+      return Promise.reject(error);
     }
   };
 
@@ -418,175 +451,24 @@ export const useCloudAccountStore = defineStore('cloudAccount', () => {
     }
   };
 
-  /**
-   * 创建二级账号（提交申请）
-   * @param bk_biz_id 业务ID
-   * @param params 账号参数
-   */
-  const createSecondaryAccount = async (bk_biz_id: number, params: IAccountCreateParams) => {
-    try {
-      const res = await http.post(`/api/v1/cloud/bizs/${bk_biz_id}/applications/types/add_account`, params);
-      return res?.data;
-    } catch (error) {
-      console.error(error);
-      return Promise.reject(error);
-    }
-  };
-
-  /**
-   * 更新二级账号
-   * @param bk_biz_id 业务ID
-   * @param account_id 账号ID
-   * @param params 更新参数
-   */
-  const updateSecondaryAccount = async (bk_biz_id: number, account_id: string, params: IAccountUpdateParams) => {
-    try {
-      const res = await http.patch(`/api/v1/cloud/bizs/${bk_biz_id}/accounts/${account_id}`, params);
-      return res?.data;
-    } catch (error) {
-      console.error(error);
-      return Promise.reject(error);
-    }
-  };
-
-  /**
-   * 获取三级账号密钥列表
-   * @param bk_biz_id 业务ID
-   * @param vendor 云厂商
-   * @param params 查询参数
-   */
-  const getSubAccountSecretList = async (
-    bk_biz_id: number,
-    vendor: string,
-    params: { filter?: any; page: any } & Record<string, any>,
-  ): Promise<{ list: ISubAccountSecretItem[]; count: number }> => {
-    subAccountSecretListLoading.value = true;
-
-    // 使用 Mock 数据
-    if (USE_MOCK) {
-      try {
-        const result = await mockGetSubAccountSecretList(params as any);
-        return result as { list: ISubAccountSecretItem[]; count: number };
-      } finally {
-        subAccountSecretListLoading.value = false;
-      }
-    }
-
-    // 使用真实接口
-    const api = `/api/v1/cloud/bizs/${bk_biz_id}/vendors/${vendor}/sub_account_secrets/list`;
-    try {
-      // 构建请求参数
-      const requestData = { ...params };
-
-      // 获取列表数据
-      const listRes = await http.post(api, {
-        ...requestData,
-        page: { ...requestData.page, count: false },
-      });
-
-      // 获取总数
-      const countRes = await http.post(api, {
-        ...requestData,
-        page: { count: true, start: 0, limit: 0 },
-      });
-
-      const list = listRes?.data?.details || [];
-      const count = countRes?.data?.count || 0;
-
-      // 处理数据，将 extension 中的字段提取到顶层便于展示
-      const processedList = list.map((item: ISubAccountSecretItem) => ({
-        ...item,
-        cloud_secret_id: item.extension?.cloud_secret_id,
-        cloud_main_account_id: item.extension?.cloud_main_account_id,
-        cloud_sub_account_id: item.extension?.cloud_sub_account_id,
-        console_login: item.extension?.console_login,
-      }));
-
-      return { list: processedList, count };
-    } catch (error) {
-      console.error(error);
-      return Promise.reject(error);
-    } finally {
-      subAccountSecretListLoading.value = false;
-    }
-  };
-
-  /**
-   * 启用或禁用三级账号密钥（创建申请）
-   * @param bk_biz_id 业务ID
-   * @param vendor 云厂商
-   * @param params 密钥状态更新参数列表
-   */
-  const updateSubAccountSecretStatus = async (
-    bk_biz_id: number,
-    vendor: string,
-    params: IUpdateSecretStatusParams[],
-  ): Promise<{ ids: string[] }> => {
-    // 使用 Mock 数据
-    if (USE_MOCK) {
-      return mockUpdateSubAccountSecretStatus(params);
-    }
-
-    // 使用真实接口
-    try {
-      const api = `/api/v1/cloud/bizs/${bk_biz_id}/vendors/${vendor}/applications/types/update_sub_account_secret_status`;
-      const res = await http.post(api, {
-        sub_account_secrets: params,
-      });
-      return res?.data;
-    } catch (error) {
-      console.error(error);
-      return Promise.reject(error);
-    }
-  };
-
-  /**
-   * 删除三级账号密钥（创建申请）
-   * @param bk_biz_id 业务ID
-   * @param vendor 云厂商
-   * @param ids 密钥ID列表
-   */
-  const deleteSubAccountSecret = async (
-    bk_biz_id: number,
-    vendor: string,
-    ids: string[],
-  ): Promise<{ ids: string[] }> => {
-    // 使用 Mock 数据
-    if (USE_MOCK) {
-      return mockDeleteSubAccountSecret(ids);
-    }
-
-    // 使用真实接口
-    try {
-      const api = `/api/v1/cloud/bizs/${bk_biz_id}/vendors/${vendor}/applications/types/delete_sub_account_secret`;
-      const res = await http.post(api, { ids });
-      return res?.data;
-    } catch (error) {
-      console.error(error);
-      return Promise.reject(error);
-    }
-  };
-
   return {
     accountListLoading,
     secretListLoading,
     secretCheckLoading,
-    subAccountSecretListLoading,
+    allSecondaryAccountCacheList,
     getSecondaryAccountList,
+    getSecondaryAccountDetail,
     getSecondaryAccountFullList,
     getSecondaryAccountListByAccountIds,
     syncAccountResource,
     syncSecondaryAccounts,
+    createSecondaryAccount,
+    updateSecondaryAccount,
     getAccountSecretList,
+    getAccountSecretDetail,
     createAccountSecret,
     updateAccountSecret,
     deleteAccountSecret,
     checkAccountSecret,
-    createSecondaryAccount,
-    updateSecondaryAccount,
-    getSubAccountSecretList,
-    updateSubAccountSecretStatus,
-    deleteSubAccountSecret,
-    allSecondaryAccountCacheList,
   };
 });
