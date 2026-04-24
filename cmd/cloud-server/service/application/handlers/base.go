@@ -27,6 +27,8 @@ import (
 	"hcm/pkg/client"
 	"hcm/pkg/criteria/enumor"
 	"hcm/pkg/cryptography"
+	"hcm/pkg/kit"
+	"hcm/pkg/logs"
 	"hcm/pkg/rest"
 	"hcm/pkg/thirdparty/api-gateway/cmdb"
 	"hcm/pkg/thirdparty/api-gateway/cmsi"
@@ -49,6 +51,7 @@ type HandlerOption struct {
 // BaseApplicationHandler 基础的Handler 一些公共函数和属性处理，可以给到其他具体Handler组合
 type BaseApplicationHandler struct {
 	applicationType enumor.ApplicationType
+	operation       enumor.ApplicationOperation
 	vendor          enumor.Vendor
 
 	Cts        *rest.Contexts
@@ -60,11 +63,12 @@ type BaseApplicationHandler struct {
 }
 
 // NewBaseApplicationHandler ...
-func NewBaseApplicationHandler(
-	opt *HandlerOption, applicationType enumor.ApplicationType, vendor enumor.Vendor,
+func NewBaseApplicationHandler(opt *HandlerOption, applicationType enumor.ApplicationType,
+	operation enumor.ApplicationOperation, vendor enumor.Vendor,
 ) BaseApplicationHandler {
 	return BaseApplicationHandler{
 		applicationType: applicationType,
+		operation:       operation,
 		vendor:          vendor,
 		Cts:             opt.Cts,
 		Client:          opt.Client,
@@ -78,6 +82,11 @@ func NewBaseApplicationHandler(
 // GetType 申请单类型
 func (a *BaseApplicationHandler) GetType() enumor.ApplicationType {
 	return a.applicationType
+}
+
+// GetOperation 细粒度操作类型
+func (a *BaseApplicationHandler) GetOperation() enumor.ApplicationOperation {
+	return a.operation
 }
 
 // Vendor ...
@@ -99,8 +108,8 @@ func (a *BaseApplicationHandler) getPageOfOneLimit() *core.BasePage {
 }
 
 // GetItsmPlatformAndAccountApprover get itsm platform and account approver.
-func (a *BaseApplicationHandler) GetItsmPlatformAndAccountApprover(managers []string,
-	accountID string) []itsmCli.VariableApprover {
+func (a *BaseApplicationHandler) GetItsmPlatformAndAccountApprover(kt *kit.Kit, managers []string,
+	accountID string) ([]itsmCli.VariableApprover, error) {
 
 	allManagers := []itsmCli.VariableApprover{
 		{
@@ -111,7 +120,8 @@ func (a *BaseApplicationHandler) GetItsmPlatformAndAccountApprover(managers []st
 
 	accountData, err := a.GetAccount(accountID)
 	if err != nil {
-		return allManagers
+		logs.Errorf("get account(%s) failed: %v, rid: %s", accountID, err, kt.Rid)
+		return allManagers, nil
 	}
 
 	allManagers = append(allManagers, itsmCli.VariableApprover{
@@ -119,11 +129,12 @@ func (a *BaseApplicationHandler) GetItsmPlatformAndAccountApprover(managers []st
 		Approvers: accountData.Managers,
 	})
 
-	return allManagers
+	return allManagers, nil
 }
 
 // Complete complete the application by manual.
 func (a *BaseApplicationHandler) Complete() (status enumor.ApplicationStatus, deliverDetail map[string]interface{},
 	err error) {
+
 	return enumor.DeliverError, map[string]interface{}{}, fmt.Errorf("not implemented")
 }

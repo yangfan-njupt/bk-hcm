@@ -33,6 +33,7 @@ type ApplicationCreateReq struct {
 	// SN Notice：v4版本的SN和v3不是一个含义，虽然我们本地依然沿用SN的叫法，但是在v4版本中，SN并不使用，而是用ticket_id进行查询
 	SN             string                   `json:"sn" validate:"required"`
 	Type           enumor.ApplicationType   `json:"type" validate:"required"`
+	Operation      enumor.ApplicationOperation `json:"operation" validate:"required"`
 	Status         enumor.ApplicationStatus `json:"status" validate:"required"`
 	BkBizIDs       []int64                  `json:"bk_biz_ids" validate:"required"`
 	Applicant      string                   `json:"applicant" validate:"required"`
@@ -43,7 +44,19 @@ type ApplicationCreateReq struct {
 
 // Validate ...
 func (req *ApplicationCreateReq) Validate() error {
-	return validator.Validate.Struct(req)
+	if err := validator.Validate.Struct(req); err != nil {
+		return err
+	}
+
+	if err := req.Type.Validate(); err != nil {
+		return err
+	}
+
+	if err := req.Operation.Validate(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // ApplicationUpdateReq ...
@@ -64,6 +77,7 @@ type ApplicationResp struct {
 	Source         enumor.ApplicationSource `json:"source"`
 	SN             string                   `json:"sn"`
 	Type           enumor.ApplicationType   `json:"type"`
+	Operation      enumor.ApplicationOperation `json:"operation"`
 	Status         enumor.ApplicationStatus `json:"status"`
 	BkBizIDs       []int64                  `json:"bk_biz_ids"`
 	Applicant      string                   `json:"applicant"`
