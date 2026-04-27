@@ -144,7 +144,11 @@ func (a *applicationSvc) create(cts *rest.Contexts, req *proto.CreateCommonReq,
 	}
 
 	// 获取ITSM单据涉及到的各个节点审批人
-	approvers := handler.GetItsmApprover(strings.Split(processInfo.Managers, ","))
+	approvers, err := handler.GetItsmApprover(cts.Kit, strings.Split(processInfo.Managers, ","))
+	if err != nil {
+		logs.Errorf("get itsm approver failed, err: %v, rid: %s", err, cts.Kit.Rid)
+		return "", fmt.Errorf("get itsm approver failed, err: %v", err)
+	}
 
 	// 调用ITSM创建单据
 	itsmTicketRes, err := a.itsmCli.CreateTicket(
@@ -195,10 +199,6 @@ func (a *applicationSvc) createWithDataService(kt *kit.Kit, itsmTicketID string,
 		bkBizIDs = handler.GetBkBizIDs()
 	}
 	operation := handler.GetOperation()
-
-	return a.client.DataService().Global.Application.CreateApplication(
-		cts.Kit.Ctx,
-		cts.Kit.Header(),
 
 	result, err := a.client.DataService().Global.Application.CreateApplication(
 		kt.Ctx,
