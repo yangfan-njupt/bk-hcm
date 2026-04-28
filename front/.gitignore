@@ -85,3 +85,6 @@ index.dev.js
 
 # cert
 *.pem
+
+.stylelintcache
+

@@ -144,7 +144,11 @@ func (a *applicationSvc) create(cts *rest.Contexts, req *proto.CreateCommonReq,
 	}
 
 	// 获取ITSM单据涉及到的各个节点审批人
-	approvers := handler.GetItsmApprover(strings.Split(processInfo.Managers, ","))
+	approvers, err := handler.GetItsmApprover(cts.Kit, strings.Split(processInfo.Managers, ","))
+	if err != nil {
+		logs.Errorf("get itsm approver failed, err: %v, rid: %s", err, cts.Kit.Rid)
+		return "", fmt.Errorf("get itsm approver failed, err: %v", err)
+	}
 
 	// 调用ITSM创建单据
 	itsmTicketRes, err := a.itsmCli.CreateTicket(
@@ -182,12 +186,19 @@ func (a *applicationSvc) createWithDataService(kt *kit.Kit, itsmTicketID string,
 	}
 
 	// 主机、硬盘、VPC、负载均衡需要记录业务ID
+	var needBkBizIDsOps = map[enumor.ApplicationOperation]struct{}{
+		enumor.OpCreateCvm:          {},
+		enumor.OpCreateDisk:         {},
+		enumor.OpCreateVpc:          {},
+		enumor.OpCreateLoadBalancer: {},
+		enumor.OpAddAccount:         {},
+	}
+
 	var bkBizIDs = make([]int64, 0)
-	if applicationType == enumor.CreateCvm || applicationType == enumor.CreateDisk ||
-		applicationType == enumor.CreateVpc || applicationType == enumor.CreateLoadBalancer ||
-		applicationType == enumor.AddAccount {
+	if _, ok := needBkBizIDsOps[handler.GetOperation()]; ok {
 		bkBizIDs = handler.GetBkBizIDs()
 	}
+	operation := handler.GetOperation()
 
 	result, err := a.client.DataService().Global.Application.CreateApplication(
 		kt.Ctx,
@@ -196,6 +207,7 @@ func (a *applicationSvc) createWithDataService(kt *kit.Kit, itsmTicketID string,
 			SN:             itsmTicketID,
 			Source:         enumor.ApplicationSourceITSM,
 			Type:           applicationType,
+			Operation:      operation,
 			Status:         enumor.Pending,
 			BkBizIDs:       bkBizIDs,
 			Applicant:      kt.User,

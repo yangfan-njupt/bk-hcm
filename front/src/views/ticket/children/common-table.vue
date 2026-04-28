@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import { h } from 'vue';
+import { h, inject } from 'vue';
 import { APPLICATION_STATUS_MAP, APPLICATION_TYPE_MAP, searchData } from '../constants';
 import { useRoute, useRouter } from 'vue-router';
 import { Button } from 'bkui-vue';
@@ -17,7 +17,7 @@ import { timeFormatter } from '@/common/util';
 import { useTable } from '@/hooks/useTable/useTable';
 import type { RulesItem } from '@/typings';
 import useSearchUser from '@/hooks/use-search-user';
-import { MENU_SERVICE_TICKET_DETAILS } from '@/constants/menu-symbol';
+import { MENU_SERVICE_TICKET_DETAILS, MENU_BUSINESS_TICKET_DETAILS } from '@/constants/menu-symbol';
 import UserValue from '@/components/display-value/user-value.vue';
 
 interface IProps {
@@ -28,6 +28,7 @@ const props = withDefaults(defineProps<IProps>(), {});
 
 const router = useRouter();
 const route = useRoute();
+const isBusinessPage = inject<boolean>('isBusinessPage');
 
 const { search: searchUser } = useSearchUser();
 
@@ -51,11 +52,10 @@ const columns = [
           theme: 'primary',
           onClick: () => {
             router.push({
-              name: MENU_SERVICE_TICKET_DETAILS,
+              name: isBusinessPage ? MENU_BUSINESS_TICKET_DETAILS : MENU_SERVICE_TICKET_DETAILS,
               query: {
                 ...route.query,
                 id: data.id,
-                type: data.type,
               },
             });
           },
@@ -66,7 +66,7 @@ const columns = [
   },
   {
     label: '申请类型',
-    field: 'type',
+    field: 'operation',
     render: ({ cell }: { cell: string }) => APPLICATION_TYPE_MAP[cell],
   },
   {

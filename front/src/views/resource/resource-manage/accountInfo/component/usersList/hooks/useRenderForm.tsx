@@ -82,7 +82,13 @@ export default (getListData: Function) => {
         >
           <Form v-model={userFormModel} formType='vertical' ref={formRef}>
             <FormItem label={t('所属业务')} class={'api-secret-selector'} property='bk_biz_ids'>
-              <Select v-model={userFormModel.bk_biz_ids} showSelectAll multiple multipleMode='tag' collapseTags>
+              <Select
+                v-model={userFormModel.bk_biz_ids}
+                showSelectAll
+                multiple
+                multipleMode='tag'
+                collapseTags
+                filterable>
                 {businessMapStore.businessList.map((businessItem) => {
                   return (
                     <bk-option key={businessItem.id} value={businessItem.id} label={businessItem.name}></bk-option>

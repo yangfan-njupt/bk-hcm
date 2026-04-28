@@ -87,6 +87,7 @@ watchEffect(
     :id-key="'name'"
     :display-key="'name'"
     :loading="loading"
+    filterable
     v-bind="attrs"
   />
 </template>
