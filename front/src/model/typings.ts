@@ -31,6 +31,7 @@ export type AppearanceType =
   | 'business-assign-tag'
   | 'dynamic-status'
   | 'link-button'
+  | 'radio'
   | 'link-popover';
 
 export type ModelPropertyMeta = {
