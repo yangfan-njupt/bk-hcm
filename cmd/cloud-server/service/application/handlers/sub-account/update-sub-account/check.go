@@ -29,7 +29,7 @@ import (
 	"hcm/pkg/tools/converter"
 )
 
-// CheckReq validate the request and check that the sub account exists.
+// CheckReq validate the request and check that the subaccount exists.
 func (a *ApplicationOfUpdateSubAccount) CheckReq() error {
 	if err := a.req.Validate(); err != nil {
 		return err
@@ -38,7 +38,7 @@ func (a *ApplicationOfUpdateSubAccount) CheckReq() error {
 	if err := a.CheckSubAccountExists(a.req.ID); err != nil {
 		return err
 	}
-
+	
 	account, err := a.GetAccount(a.AccountID())
 	if err != nil {
 		return fmt.Errorf("found parent account(%s) failed, err: %w", a.AccountID(), err)
