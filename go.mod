@@ -99,6 +99,8 @@ require (
 
 require github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor v0.11.0
 
+require github.com/nyaruka/phonenumbers v1.7.2
+
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.5.2 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
@@ -161,7 +163,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de // indirect
 	google.golang.org/grpc v1.79.3
-	google.golang.org/protobuf v1.36.10
+	google.golang.org/protobuf v1.36.11
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
 
