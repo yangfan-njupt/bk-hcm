@@ -5,7 +5,8 @@ import RenderTableRow from '../RenderTableRow';
 import { AdjustmentItem } from '@/typings/bill';
 import { VendorEnum } from '@/common/constant';
 import { AdjustTypeEnum } from '../RenderTableRow/components/AdjustTypeSelector';
-import { cloneDeep } from 'lodash';
+import { ResClassEnum } from '@/constants';
+import { cloneDeep } from 'lodash-es';
 
 export default defineComponent({
   props: {
@@ -32,6 +33,7 @@ export default defineComponent({
         product_id: '',
         bk_biz_id: '',
         type: AdjustTypeEnum.Increase,
+        res_class: ResClassEnum.Gpu,
         cost: '',
         main_account_id: '',
         memo: '',

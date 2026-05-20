@@ -7,6 +7,18 @@ import { useUserStore } from '@/store/user';
 
 defineOptions({ name: 'user-selector' });
 
+const model = defineModel<string | string[]>();
+
+const props = withDefaults(defineProps<IUserSelectorProps>(), {
+  multiple: true,
+  allowCreate: true,
+  hasDeleteIcon: true,
+  clearable: true,
+  trigger: 'focus',
+  collapseTags: true,
+  placeholder: '请输入',
+});
+
 export interface IUserSelectorProps {
   multiple?: boolean;
   disabled?: boolean;
@@ -28,8 +40,6 @@ const emit = defineEmits<{
   change: [val: string | string[]];
 }>();
 
-const model = defineModel<string | string[]>();
-
 const userStore = useUserStore();
 
 const tenantId = computed(() => userStore.tenantId);
@@ -39,6 +49,20 @@ const apiBaseUrl = window.PROJECT_CONFIG.USER_MANAGE_URL;
 const handleChange = (val: string | string[]) => {
   emit('change', val);
 };
+
+const focus = () => {
+  tagInputRef.value?.focusInputTrigger?.();
+};
+
+defineExpose({
+  getValue() {
+    if (tagInputRef.value?.getValue) {
+      return tagInputRef.value.getValue().then(() => model.value);
+    }
+    return model.value;
+  },
+  focus,
+});
 </script>
 
 <template>

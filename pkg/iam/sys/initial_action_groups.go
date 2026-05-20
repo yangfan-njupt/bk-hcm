@@ -99,6 +99,17 @@ func genResManagementActionGroups() []iam.ActionGroup {
 						{ID: BizTaskManagementOperate},
 					},
 				},
+				{
+					Name:   "云账号",
+					NameEn: "Cloud Account",
+					Actions: []iam.ActionWithID{
+						{ID: BizAccountOperate},
+						{ID: BizSubAccountOperate},
+						{ID: BizSubAccountSecretOperate},
+						{ID: BizPermissionTemplateOperate},
+						{ID: BizPermissionPolicyLibraryOperate},
+					},
+				},
 			},
 		},
 	}
