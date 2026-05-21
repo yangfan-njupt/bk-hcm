@@ -57,8 +57,7 @@ export default defineComponent({
         extCls='batch-update-popconfirm'
         popoverOptions={slots.content ? { disableOutsideClick: true } : {}}
         onConfirm={handleConfirm}
-        disabled={props.disabled}
-      >
+        disabled={props.disabled}>
         {{
           default: () => (
             <i
@@ -66,8 +65,7 @@ export default defineComponent({
               v-bk-tooltips={{
                 content: props.disabledTip,
                 disabled: !props.disabled,
-              }}
-            ></i>
+              }}></i>
           ),
           content: () => (
             <div class='batch-update-popconfirm-content'>

@@ -133,8 +133,7 @@ export default defineComponent({
                 editData.value = data;
               }}
               disabled={data.state !== 'unconfirmed'}
-              v-bk-tooltips={{ content: t('当前调账单已确认，无法编辑'), disabled: data.state === 'unconfirmed' }}
-            >
+              v-bk-tooltips={{ content: t('当前调账单已确认，无法编辑'), disabled: data.state === 'unconfirmed' }}>
               {t('编辑')}
             </Button>
             <Button
@@ -142,8 +141,7 @@ export default defineComponent({
               theme='primary'
               onClick={() => handleDelete(data.id)}
               disabled={data.state !== 'unconfirmed'}
-              v-bk-tooltips={{ content: t('当前调账单已确认，无法删除'), disabled: data.state === 'unconfirmed' }}
-            >
+              v-bk-tooltips={{ content: t('当前调账单已确认，无法删除'), disabled: data.state === 'unconfirmed' }}>
               {t('删除')}
             </Button>
           </>
@@ -231,8 +229,7 @@ export default defineComponent({
                     onClick={() => {
                       createAdjustSideSliderRef.value.triggerShow(true);
                       isEdit.value = false;
-                    }}
-                  >
+                    }}>
                     <Plus style={{ fontSize: '22px' }} />
                     {t('新增调账')}
                   </Button>

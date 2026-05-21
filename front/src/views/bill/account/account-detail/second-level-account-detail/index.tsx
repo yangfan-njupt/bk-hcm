@@ -172,7 +172,7 @@ export default defineComponent({
               prop: 'op_product_id',
               name: '业务',
             },
-            { prop: 'memo', name: '备注', edit: true },
+            { prop: 'memo', name: '备注' },
             { prop: 'creator', name: '创建者', render: () => <hcm-user-value value={detail.value.creator} /> },
             { prop: 'reviser', name: '修改者', render: () => <hcm-user-value value={detail.value.reviser} /> },
             { prop: 'created_at', name: '创建时间', render: () => timeFormatter(detail.value.created_at) },

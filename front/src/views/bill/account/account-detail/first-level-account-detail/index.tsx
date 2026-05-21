@@ -258,9 +258,9 @@ export default defineComponent({
             { prop: 'name', name: '一级账号名称' },
             { prop: 'cloud_id', name: '一级账号ID' },
             { prop: 'email', name: '账号邮箱' },
-            { prop: 'managers', name: '主负责人', edit: true, type: 'member' },
-            { prop: 'bak_managers', name: '备份负责人', edit: true, type: 'member' },
-            { prop: 'memo', name: '备注', edit: true },
+            { prop: 'managers', name: '主负责人' },
+            { prop: 'bak_managers', name: '备份负责人' },
+            { prop: 'memo', name: '备注' },
             { prop: 'creator', name: '创建者', render: () => <hcm-user-value value={detail.value.creator} /> },
             { prop: 'reviser', name: '修改者', render: () => <hcm-user-value value={detail.value.reviser} /> },
             { prop: 'created_at', name: '创建时间', render: () => timeFormatter(detail.created_at) },
@@ -274,8 +274,7 @@ export default defineComponent({
               class={'edit-icon'}
               onClick={() => {
                 isEditDialogShow.value = true;
-              }}
-            >
+              }}>
               <i class={'hcm-icon bkhcm-icon-bianji mr6'} />
               编辑
             </span>
@@ -321,8 +320,7 @@ export default defineComponent({
                   class={'validate-btn'}
                   loading={isValidateLoading.value}
                   onClick={() => handleValidate()}
-                  disabled={isValidateDiasbled.value}
-                >
+                  disabled={isValidateDiasbled.value}>
                   账号校验
                 </Button>
                 <Button
@@ -338,8 +336,7 @@ export default defineComponent({
                     } finally {
                       buttonLoading.value = false;
                     }
-                  }}
-                >
+                  }}>
                   {'确认'}
                 </Button>
                 <Button class='ml10' onClick={() => (isEditDialogShow.value = false)}>
