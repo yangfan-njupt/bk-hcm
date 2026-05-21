@@ -174,6 +174,46 @@ func genResManagementActions() []iam.ResourceAction {
 		RelatedResourceTypes: bizResource,
 		RelatedActions:       []iam.ActionID{BizAccess},
 		Version:              1,
+	}, {
+		ID:                   BizAccountOperate,
+		Name:                 ActionIDNameMap[BizAccountOperate],
+		NameEn:               "Operate Biz Account",
+		Type:                 Edit,
+		RelatedResourceTypes: bizResource,
+		RelatedActions:       []iam.ActionID{BizAccess},
+		Version:              1,
+	}, {
+		ID:                   BizSubAccountOperate,
+		Name:                 ActionIDNameMap[BizSubAccountOperate],
+		NameEn:               "Operate Biz Sub-Account",
+		Type:                 Edit,
+		RelatedResourceTypes: bizResource,
+		RelatedActions:       []iam.ActionID{BizAccess},
+		Version:              1,
+	}, {
+		ID:                   BizSubAccountSecretOperate,
+		Name:                 ActionIDNameMap[BizSubAccountSecretOperate],
+		NameEn:               "Operate Biz Sub-Account Secret",
+		Type:                 Edit,
+		RelatedResourceTypes: bizResource,
+		RelatedActions:       []iam.ActionID{BizAccess},
+		Version:              1,
+	}, {
+		ID:                   BizPermissionTemplateOperate,
+		Name:                 ActionIDNameMap[BizPermissionTemplateOperate],
+		NameEn:               "Operate Biz Permission Template",
+		Type:                 Edit,
+		RelatedResourceTypes: bizResource,
+		RelatedActions:       []iam.ActionID{BizAccess},
+		Version:              1,
+	}, {
+		ID:                   BizPermissionPolicyLibraryOperate,
+		Name:                 ActionIDNameMap[BizPermissionPolicyLibraryOperate],
+		NameEn:               "Operate Biz Permission Policy Library",
+		Type:                 Edit,
+		RelatedResourceTypes: bizResource,
+		RelatedActions:       []iam.ActionID{BizAccess},
+		Version:              1,
 	}}...)
 
 	return actions

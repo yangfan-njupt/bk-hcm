@@ -17,7 +17,7 @@ import { useTable } from '@/hooks/useTable/useTable';
 import useSelection from '@/views/resource/resource-manage/hooks/use-selection';
 import { deleteBillsAdjustment, exportBillsAdjustmentItems, reqBillsAdjustmentList } from '@/api/bill';
 import { timeFormatter } from '@/common/util';
-import { BILL_ADJUSTMENT_STATE__MAP, BILL_ADJUSTMENT_TYPE__MAP, CURRENCY_MAP } from '@/constants';
+import { BILL_ADJUSTMENT_STATE__MAP, BILL_ADJUSTMENT_TYPE__MAP, CURRENCY_MAP, RES_CLASS_MAP } from '@/constants';
 import { DoublePlainObject, QueryRuleOPEnum, RulesItem } from '@/typings';
 import useBillStore from '@/store/useBillStore';
 import { formatBillCost } from '@/utils';
@@ -82,6 +82,11 @@ export default defineComponent({
         width: 300,
       },
       {
+        label: t('资源类别'),
+        field: 'res_class',
+        render: ({ cell }: any) => RES_CLASS_MAP[cell] || '--',
+      },
+      {
         label: t('调账类型'),
         field: 'type',
         render: ({ cell }: any) => (
@@ -128,8 +133,7 @@ export default defineComponent({
                 editData.value = data;
               }}
               disabled={data.state !== 'unconfirmed'}
-              v-bk-tooltips={{ content: t('当前调账单已确认，无法编辑'), disabled: data.state === 'unconfirmed' }}
-            >
+              v-bk-tooltips={{ content: t('当前调账单已确认，无法编辑'), disabled: data.state === 'unconfirmed' }}>
               {t('编辑')}
             </Button>
             <Button
@@ -137,8 +141,7 @@ export default defineComponent({
               theme='primary'
               onClick={() => handleDelete(data.id)}
               disabled={data.state !== 'unconfirmed'}
-              v-bk-tooltips={{ content: t('当前调账单已确认，无法删除'), disabled: data.state === 'unconfirmed' }}
-            >
+              v-bk-tooltips={{ content: t('当前调账单已确认，无法删除'), disabled: data.state === 'unconfirmed' }}>
               {t('删除')}
             </Button>
           </>
@@ -226,8 +229,7 @@ export default defineComponent({
                     onClick={() => {
                       createAdjustSideSliderRef.value.triggerShow(true);
                       isEdit.value = false;
-                    }}
-                  >
+                    }}>
                     <Plus style={{ fontSize: '22px' }} />
                     {t('新增调账')}
                   </Button>

@@ -35,6 +35,10 @@ func genSkipResource(_ *meta.ResourceAttribute) (iam.ActionID, []iam.Resource, e
 
 // genAccountResource generate account related iam resource.
 func genAccountResource(a *meta.ResourceAttribute) (iam.ActionID, []iam.Resource, error) {
+	if a.BizID > 0 {
+		return genBizAccountResource(a)
+	}
+
 	res := iam.Resource{
 		System: sys.SystemIDHCM,
 		Type:   sys.Account,
@@ -63,6 +67,23 @@ func genAccountResource(a *meta.ResourceAttribute) (iam.ActionID, []iam.Resource
 	case meta.Delete:
 		// update account RecycleReserveTime is related to hcm account resource
 		return sys.AccountDelete, []iam.Resource{res}, nil
+	default:
+		return "", nil, errf.Newf(errf.InvalidParameter, "unsupported hcm action: %s", a.Basic.Action)
+	}
+}
+
+func genBizAccountResource(a *meta.ResourceAttribute) (iam.ActionID, []iam.Resource, error) {
+	res := iam.Resource{
+		System: sys.SystemIDCMDB,
+		Type:   sys.Biz,
+		ID:     strconv.FormatInt(a.BizID, 10),
+	}
+
+	switch a.Basic.Action {
+	case meta.Find:
+		return sys.BizAccess, []iam.Resource{res}, nil
+	case meta.Create, meta.Update, meta.Delete:
+		return sys.BizAccountOperate, []iam.Resource{res}, nil
 	default:
 		return "", nil, errf.Newf(errf.InvalidParameter, "unsupported hcm action: %s", a.Basic.Action)
 	}
@@ -357,6 +378,10 @@ func genCvmResource(a *meta.ResourceAttribute) (iam.ActionID, []iam.Resource, er
 }
 
 func genSubAccountResource(a *meta.ResourceAttribute) (iam.ActionID, []iam.Resource, error) {
+	if a.BizID > 0 {
+		return genBizSubAccountResource(a)
+	}
+
 	res := iam.Resource{
 		System: sys.SystemIDHCM,
 		Type:   sys.Account,
@@ -368,6 +393,49 @@ func genSubAccountResource(a *meta.ResourceAttribute) (iam.ActionID, []iam.Resou
 		return sys.AccountFind, []iam.Resource{res}, nil
 	case meta.Update:
 		return sys.SubAccountEdit, []iam.Resource{res}, nil
+	default:
+		return "", nil, errf.Newf(errf.InvalidParameter, "unsupported hcm action: %s", a.Basic.Action)
+	}
+}
+
+func genBizSubAccountResource(a *meta.ResourceAttribute) (iam.ActionID, []iam.Resource, error) {
+	res := iam.Resource{
+		System: sys.SystemIDCMDB,
+		Type:   sys.Biz,
+		ID:     strconv.FormatInt(a.BizID, 10),
+	}
+
+	switch a.Basic.Action {
+	case meta.Find:
+		return sys.BizAccess, []iam.Resource{res}, nil
+	case meta.Create, meta.Update, meta.Delete:
+		return sys.BizSubAccountOperate, []iam.Resource{res}, nil
+	default:
+		return "", nil, errf.Newf(errf.InvalidParameter, "unsupported hcm action: %s", a.Basic.Action)
+	}
+}
+
+// genSubAccountSecretResource generate sub account secret related iam resource.
+func genSubAccountSecretResource(a *meta.ResourceAttribute) (iam.ActionID, []iam.Resource, error) {
+	if a.BizID > 0 {
+		return genBizSubAccountSecretResource(a)
+	}
+
+	return "", nil, errf.Newf(errf.InvalidParameter, "biz id is invalid: %d", a.BizID)
+}
+
+func genBizSubAccountSecretResource(a *meta.ResourceAttribute) (iam.ActionID, []iam.Resource, error) {
+	res := iam.Resource{
+		System: sys.SystemIDCMDB,
+		Type:   sys.Biz,
+		ID:     strconv.FormatInt(a.BizID, 10),
+	}
+
+	switch a.Basic.Action {
+	case meta.Find:
+		return sys.BizAccess, []iam.Resource{res}, nil
+	case meta.Create, meta.Update, meta.Delete:
+		return sys.BizSubAccountSecretOperate, []iam.Resource{res}, nil
 	default:
 		return "", nil, errf.Newf(errf.InvalidParameter, "unsupported hcm action: %s", a.Basic.Action)
 	}
@@ -863,6 +931,28 @@ func genCloudSelectionResource(*meta.ResourceAttribute) (iam.ActionID, []iam.Res
 	return sys.CloudSelectionRecommend, make([]iam.Resource, 0), nil
 }
 
+// genPermissionTemplateResource generate permission template related iam resource.
+func genPermissionTemplateResource(a *meta.ResourceAttribute) (iam.ActionID, []iam.Resource, error) {
+	if a.BizID <= 0 {
+		return "", nil, errf.Newf(errf.InvalidParameter, "biz id is required for permission template, got: %d", a.BizID)
+	}
+
+	res := iam.Resource{
+		System: sys.SystemIDCMDB,
+		Type:   sys.Biz,
+		ID:     strconv.FormatInt(a.BizID, 10),
+	}
+
+	switch a.Basic.Action {
+	case meta.Find:
+		return sys.BizAccess, []iam.Resource{res}, nil
+	case meta.Create, meta.Update, meta.Delete:
+		return sys.BizPermissionTemplateOperate, []iam.Resource{res}, nil
+	default:
+		return "", nil, errf.Newf(errf.InvalidParameter, "unsupported hcm action: %s", a.Basic.Action)
+	}
+}
+
 func genGlobalConfigResource(a *meta.ResourceAttribute) (iam.ActionID, []iam.Resource, error) {
 	switch a.Basic.Action {
 	case meta.Create:
@@ -878,9 +968,30 @@ func genGlobalConfigResource(a *meta.ResourceAttribute) (iam.ActionID, []iam.Res
 
 // genPermissionPolicyLibraryResource generate permission policy library related iam resource.
 func genPermissionPolicyLibraryResource(a *meta.ResourceAttribute) (iam.ActionID, []iam.Resource, error) {
+	if a.BizID > 0 {
+		return genBizPermissionPolicyLibraryResource(a)
+	}
+
 	switch a.Basic.Action {
-	case meta.Create, meta.Find, meta.Update, meta.Delete:
+	case meta.Create, meta.Find, meta.Update, meta.Delete, meta.Apply:
 		return sys.CloudVendorConfig, make([]iam.Resource, 0), nil
+	default:
+		return "", nil, errf.Newf(errf.InvalidParameter, "unsupported hcm action: %s", a.Basic.Action)
+	}
+}
+
+func genBizPermissionPolicyLibraryResource(a *meta.ResourceAttribute) (iam.ActionID, []iam.Resource, error) {
+	res := iam.Resource{
+		System: sys.SystemIDCMDB,
+		Type:   sys.Biz,
+		ID:     strconv.FormatInt(a.BizID, 10),
+	}
+
+	switch a.Basic.Action {
+	case meta.Find:
+		return sys.BizAccess, []iam.Resource{res}, nil
+	case meta.Create, meta.Update, meta.Delete, meta.Apply:
+		return sys.BizPermissionPolicyLibraryOperate, []iam.Resource{res}, nil
 	default:
 		return "", nil, errf.Newf(errf.InvalidParameter, "unsupported hcm action: %s", a.Basic.Action)
 	}
