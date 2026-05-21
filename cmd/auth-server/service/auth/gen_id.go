@@ -72,7 +72,7 @@ func genAccountResource(a *meta.ResourceAttribute) (iam.ActionID, []iam.Resource
 	}
 }
 
-func genBizAccountResource(a *meta.ResourceAttribute) (iam.ActionID, []client.Resource, error) {
+func genBizAccountResource(a *meta.ResourceAttribute) (iam.ActionID, []iam.Resource, error) {
 	res := iam.Resource{
 		System: sys.SystemIDCMDB,
 		Type:   sys.Biz,
@@ -398,7 +398,7 @@ func genSubAccountResource(a *meta.ResourceAttribute) (iam.ActionID, []iam.Resou
 	}
 }
 
-func genBizSubAccountResource(a *meta.ResourceAttribute) (iam.ActionID, []client.Resource, error) {
+func genBizSubAccountResource(a *meta.ResourceAttribute) (iam.ActionID, []iam.Resource, error) {
 	res := iam.Resource{
 		System: sys.SystemIDCMDB,
 		Type:   sys.Biz,
@@ -980,7 +980,7 @@ func genPermissionPolicyLibraryResource(a *meta.ResourceAttribute) (iam.ActionID
 	}
 }
 
-func genBizPermissionPolicyLibraryResource(a *meta.ResourceAttribute) (client.ActionID, []client.Resource, error) {
+func genBizPermissionPolicyLibraryResource(a *meta.ResourceAttribute) (iam.ActionID, []iam.Resource, error) {
 	res := iam.Resource{
 		System: sys.SystemIDCMDB,
 		Type:   sys.Biz,
