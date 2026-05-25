@@ -17,7 +17,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions v1.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription v1.0.0
 	github.com/TencentBlueKing/gopkg v1.1.0
-	github.com/aws/aws-sdk-go v1.44.334
+	github.com/aws/aws-sdk-go v1.55.8
 	github.com/emicklei/go-restful/v3 v3.10.2
 	github.com/go-playground/validator/v10 v10.20.0
 	// go-sql-driver/mysql v1.8.1 may casuse error: connection.go:49: unexpected EOF
@@ -104,7 +104,16 @@ require github.com/nyaruka/phonenumbers v1.7.2
 require github.com/patrickmn/go-cache v2.1.0+incompatible
 
 require (
+	github.com/aws/aws-sdk-go-v2 v1.41.7
+	github.com/aws/aws-sdk-go-v2/credentials v1.19.16
+	github.com/aws/aws-sdk-go-v2/service/sagemaker v1.246.0
+)
+
+require (
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.5.2 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.23 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.23 // indirect
+	github.com/aws/smithy-go v1.25.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
