@@ -42,9 +42,12 @@ type VerifyTokenRes struct {
 
 // UserInfo is the user info
 type UserInfo struct {
-	Username    string `json:"bk_username"`
-	TenantID    string `json:"tenant_id"`
-	DisplayName string `json:"display_name"`
-	Language    string `json:"language"`
-	TimeZone    string `json:"time_zone"`
+	Username      string `json:"bk_username"`
+	TenantEnabled bool   `json:"tenant_enabled"`
+	TenantID      string `json:"tenant_id"`
+	DisplayName   string `json:"display_name"`
+	Language      string `json:"language"`
+	TimeZone      string `json:"time_zone"`
+	AuthCenterUrl string `json:"auth_center_url"`
+	UserCenterUrl string `json:"user_center_url"`
 }
