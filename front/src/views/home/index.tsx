@@ -26,6 +26,7 @@ import { classes } from '@/common/util';
 
 import { headRouteConfig } from '@/router/header-config';
 import logo from '@/assets/image/logo.png';
+import '@blueking/login-userinfo/vue3/vue3.css';
 import './index.scss';
 
 import http from '@/http';
@@ -38,6 +39,7 @@ import {
   MENU_BUSINESS_TICKET_MANAGEMENT,
 } from '@/constants/menu-symbol';
 
+import BkLoginUserinfo, { ActionItem } from '@blueking/login-userinfo';
 // import { CogShape } from 'bkui-vue/lib/icon';
 // import { useProjectList } from '@/hooks';
 // import AddProjectDialog from '@/components/AddProjectDialog';
@@ -128,6 +130,13 @@ export default defineComponent({
         </div>
       );
     };
+
+    const userinfo = computed(() => ({
+      name: userStore.userData?.display_name,
+      email: '',
+      organization: userStore.userData?.tenant_id,
+      timezone: userStore.userData?.time_zone,
+    }));
 
     /**
      * 在这里获取项目公共数据并缓存
@@ -249,21 +258,32 @@ export default defineComponent({
                 </aside>
                 <ReleaseNote />
                 <aside class='header-user'>
-                  <Dropdown>
+                  <BkLoginUserinfo userinfo={userinfo.value}>
                     {{
-                      default: () => (
-                        <span class='cursor-pointer flex-row align-items-center '>
-                          <hcm-user-value value={userStore.username} />
-                          <span class='hcm-icon bkhcm-icon-down-shape pl5'></span>
-                        </span>
-                      ),
-                      content: () => (
-                        <DropdownMenu>
-                          <DropdownItem onClick={logout}>{t('退出登录')}</DropdownItem>
-                        </DropdownMenu>
+                      action: () => (
+                        <>
+                          <ActionItem {...{ onClick: () => window.open(userStore.userData?.user_center_url) }}>
+                            {{
+                              icon: () => <span class='hcm-icon bkhcm-icon-user'></span>,
+                              default: () => '个人中心',
+                            }}
+                          </ActionItem>
+                          <ActionItem {...{ onClick: () => window.open(userStore.userData?.auth_center_url) }}>
+                            {{
+                              icon: () => <span class='hcm-icon bkhcm-icon-permission'></span>,
+                              default: () => '权限中心',
+                            }}
+                          </ActionItem>
+                          <ActionItem theme={'danger' as const} {...{ onClick: logout }}>
+                            {{
+                              icon: () => <span class='hcm-icon bkhcm-icon-export'></span>,
+                              default: () => '退出登录',
+                            }}
+                          </ActionItem>
+                        </>
                       ),
                     }}
-                  </Dropdown>
+                  </BkLoginUserinfo>
                 </aside>
               </header>
             ),
