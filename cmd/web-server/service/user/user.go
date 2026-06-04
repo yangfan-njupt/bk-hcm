@@ -60,5 +60,14 @@ func (u *userSvc) GetUser(cts *rest.Contexts) (interface{}, error) {
 		return nil, err
 	}
 	cts.Kit.SetBackendTenantID()
-	return u.loginCli.GetUserByToken(cts.Kit, cookie.Value)
+	userInfo, err := u.loginCli.GetUserByToken(cts.Kit, cookie.Value)
+	if err != nil {
+		return nil, err
+	}
+
+	webSetting := cc.WebServer()
+	userInfo.TenantEnabled = webSetting.TenantEnable()
+	userInfo.AuthCenterUrl = webSetting.Web.BkAuthCenterUrl
+	userInfo.UserCenterUrl = webSetting.Web.BkUserCenterUrl
+	return userInfo, nil
 }
